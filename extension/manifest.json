@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Chronos URL Bridge",
+  "version": "1.0",
+  "description": "Sends active tab URL to Chronos AI for richer time tracking context",
+  "permissions": ["activeTab", "tabs"],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
