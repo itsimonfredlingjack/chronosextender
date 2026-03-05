@@ -13,6 +13,7 @@ struct OllamaRequest {
     messages: Vec<OllamaMessage>,
     stream: bool,
     format: String,
+    think: bool,
     options: OllamaOptions,
 }
 
@@ -186,6 +187,7 @@ async fn classify_with_ollama(
         ],
         stream: false,
         format: "json".to_string(),
+        think: false,
         options: OllamaOptions {
             temperature: 0.1,
             num_predict: 200,
