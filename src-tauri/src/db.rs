@@ -93,6 +93,44 @@ impl Database {
             );
             ",
         )?;
+        self.seed_default_rules(&conn)?;
+        Ok(())
+    }
+
+    fn seed_default_rules(&self, conn: &Connection) -> Result<()> {
+        let count: i64 = conn.query_row("SELECT COUNT(*) FROM rules", [], |r| r.get(0))?;
+        if count > 0 {
+            return Ok(());
+        }
+
+        let defaults = [
+            ("app_name", "Ghostty", "coding"),
+            ("app_name", "Terminal", "coding"),
+            ("app_name", "iTerm2", "coding"),
+            ("app_name", "Visual Studio Code", "coding"),
+            ("app_name", "Cursor", "coding"),
+            ("app_name", "Xcode", "coding"),
+            ("bundle_id", "com.tinyspeck.slackmacgap", "communication"),
+            ("bundle_id", "com.hnc.Discord", "communication"),
+            ("app_name", "Zoom", "meeting"),
+            ("app_name", "FaceTime", "meeting"),
+            ("app_name", "Figma", "design"),
+            ("app_name", "Google Chrome", "browsing"),
+            ("app_name", "Safari", "browsing"),
+            ("app_name", "Firefox", "browsing"),
+            ("app_name", "Finder", "admin"),
+            ("app_name", "System Settings", "admin"),
+        ];
+
+        for (i, (match_type, match_value, category)) in defaults.iter().enumerate() {
+            conn.execute(
+                "INSERT INTO rules (priority, match_type, match_value, target_category)
+                 VALUES (?1, ?2, ?3, ?4)",
+                params![i as i64 + 1, match_type, match_value, category],
+            )?;
+        }
+
+        log::info!("Seeded {} default classification rules", defaults.len());
         Ok(())
     }
 
@@ -348,6 +386,33 @@ impl Database {
         let conn = self.conn.lock().unwrap();
         conn.execute("DELETE FROM rules WHERE id = ?1", params![id])?;
         Ok(())
+    }
+
+    pub fn get_rule_suggestions(&self) -> Result<Vec<RuleSuggestion>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT e.app_name, e.category, COUNT(*) as cnt
+             FROM events e
+             WHERE e.classification_source = 'llm'
+               AND e.category IS NOT NULL
+               AND e.category != 'unknown'
+               AND e.app_name NOT IN (
+                   SELECT r.match_value FROM rules r WHERE r.match_type = 'app_name'
+               )
+             GROUP BY e.app_name, e.category
+             HAVING cnt >= 3
+             ORDER BY cnt DESC",
+        )?;
+        let suggestions = stmt
+            .query_map([], |row| {
+                Ok(RuleSuggestion {
+                    app_name: row.get(0)?,
+                    suggested_category: row.get(1)?,
+                    event_count: row.get(2)?,
+                })
+            })?
+            .collect::<Result<Vec<_>>>()?;
+        Ok(suggestions)
     }
 
     // --- Summaries ---

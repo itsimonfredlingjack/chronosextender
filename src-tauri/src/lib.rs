@@ -90,6 +90,7 @@ pub fn run() {
             commands::get_rules,
             commands::add_rule,
             commands::delete_rule,
+            commands::get_rule_suggestions,
             commands::get_flow_status,
             commands::get_ollama_status,
             commands::get_settings,

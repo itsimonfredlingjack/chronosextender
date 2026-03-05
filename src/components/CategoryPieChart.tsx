@@ -6,6 +6,21 @@ interface CategoryPieChartProps {
   events: Event[];
 }
 
+function CenterLabel({ viewBox, totalHours }: { viewBox?: { cx: number; cy: number }; totalHours: number }) {
+  if (!viewBox) return null;
+  const { cx, cy } = viewBox;
+  return (
+    <g>
+      <text x={cx} y={cy - 4} textAnchor="middle" className="fill-gray-900 dark:fill-white text-xl font-bold">
+        {totalHours.toFixed(1)}
+      </text>
+      <text x={cx} y={cy + 14} textAnchor="middle" className="fill-gray-400 dark:fill-gray-500 text-[10px]">
+        hours
+      </text>
+    </g>
+  );
+}
+
 export default function CategoryPieChart({ events }: CategoryPieChartProps) {
   const categoryMap: Record<string, number> = {};
 
@@ -19,9 +34,12 @@ export default function CategoryPieChart({ events }: CategoryPieChartProps) {
       name: CATEGORY_LABELS[category as Category] || category,
       value: Math.round((seconds / 3600) * 100) / 100,
       color: CATEGORY_COLORS[category as Category] || CATEGORY_COLORS.unknown,
+      category,
     }))
     .filter((d) => d.value > 0)
     .sort((a, b) => b.value - a.value);
+
+  const totalHours = data.reduce((sum, d) => sum + d.value, 0);
 
   if (data.length === 0) {
     return (
@@ -32,25 +50,48 @@ export default function CategoryPieChart({ events }: CategoryPieChartProps) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <PieChart>
-        <Pie
-          data={data}
-          cx="50%"
-          cy="50%"
-          innerRadius={50}
-          outerRadius={80}
-          dataKey="value"
-          paddingAngle={2}
-        >
-          {data.map((entry, index) => (
-            <Cell key={index} fill={entry.color} />
-          ))}
-        </Pie>
-        <Tooltip
-          formatter={(value: number) => [`${value.toFixed(2)}h`, "Hours"]}
-        />
-      </PieChart>
-    </ResponsiveContainer>
+    <div>
+      <ResponsiveContainer width="100%" height={220}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={60}
+            outerRadius={90}
+            dataKey="value"
+            paddingAngle={2}
+            stroke="none"
+          >
+            {data.map((entry, index) => (
+              <Cell key={index} fill={entry.color} />
+            ))}
+            <CenterLabel totalHours={totalHours} />
+          </Pie>
+          <Tooltip
+            formatter={(value: number) => [`${value.toFixed(2)}h`, "Hours"]}
+            contentStyle={{
+              backgroundColor: "rgba(26, 26, 46, 0.95)",
+              border: "1px solid #2a2a40",
+              borderRadius: "8px",
+              color: "#fff",
+              fontSize: "12px",
+            }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      {/* Legend */}
+      <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
+        {data.map((d) => (
+          <div key={d.category} className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: d.color }}
+            />
+            {d.name}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

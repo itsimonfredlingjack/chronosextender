@@ -128,6 +128,22 @@ export interface Settings {
   };
 }
 
+export interface Session {
+  category: Category;
+  apps: string[];
+  start_time: string;
+  end_time: string;
+  duration_seconds: number;
+  project: string | null;
+  events: Event[];
+}
+
+export interface RuleSuggestion {
+  app_name: string;
+  suggested_category: string;
+  event_count: number;
+}
+
 export const CATEGORY_COLORS: Record<Category, string> = {
   coding: "#22c55e",
   communication: "#3b82f6",

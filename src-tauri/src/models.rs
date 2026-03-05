@@ -133,6 +133,13 @@ pub struct CategoryTime {
     pub hours: f64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RuleSuggestion {
+    pub app_name: String,
+    pub suggested_category: String,
+    pub event_count: i64,
+}
+
 pub const CATEGORIES: &[&str] = &[
     "coding",
     "communication",

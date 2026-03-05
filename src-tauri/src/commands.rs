@@ -85,6 +85,16 @@ pub async fn delete_rule(state: State<'_, Arc<DaemonState>>, id: i64) -> Result<
 }
 
 #[tauri::command]
+pub async fn get_rule_suggestions(
+    state: State<'_, Arc<DaemonState>>,
+) -> Result<Vec<RuleSuggestion>> {
+    state
+        .db
+        .get_rule_suggestions()
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn get_flow_status(state: State<'_, Arc<DaemonState>>) -> Result<FlowStatus> {
     let flow = state.flow_status.lock().await;
     Ok(flow.clone())

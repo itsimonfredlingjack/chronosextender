@@ -43,7 +43,7 @@ export default function EventCard({ event, compact }: EventCardProps) {
   }
 
   return (
-    <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+    <div className="flex items-start gap-3 p-3 bg-white dark:bg-[#1a1a2e] rounded-lg border border-gray-200 dark:border-[#2a2a40]">
       <div
         className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0"
         style={{ backgroundColor: color }}
@@ -73,11 +73,12 @@ export default function EventCard({ event, compact }: EventCardProps) {
           {event.project && (
             <span className="text-indigo-500">{event.project}</span>
           )}
-          {event.confidence > 0 && (
-            <span>
-              {Math.round(event.confidence * 100)}% conf
-            </span>
-          )}
+          <span title={event.classification_source}>
+            {event.classification_source === "rule" && "⊞"}
+            {event.classification_source === "llm" && "⚡"}
+            {event.classification_source === "manual" && "✓"}
+            {event.classification_source === "pending" && "?"}
+          </span>
         </div>
       </div>
     </div>

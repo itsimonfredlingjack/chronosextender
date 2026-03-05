@@ -9,6 +9,7 @@ import type {
   Project,
   ProjectSummary,
   Rule,
+  RuleSuggestion,
   Settings,
 } from "./types";
 
@@ -42,6 +43,8 @@ export const api = {
   addRule: (rule: NewRule) => invoke<number>("add_rule", { rule }),
 
   deleteRule: (id: number) => invoke<boolean>("delete_rule", { id }),
+
+  getRuleSuggestions: () => invoke<RuleSuggestion[]>("get_rule_suggestions"),
 
   getFlowStatus: () => invoke<FlowStatus>("get_flow_status"),
 

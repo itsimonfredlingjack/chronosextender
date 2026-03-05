@@ -2,7 +2,9 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { useEvents } from "../hooks/useEvents";
 import type { Category } from "../lib/types";
-import { CATEGORY_LABELS } from "../lib/types";
+import { CATEGORY_LABELS, CATEGORY_COLORS } from "../lib/types";
+import AIInsights from "../components/AIInsights";
+import CategoryPieChart from "../components/CategoryPieChart";
 
 function formatHours(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -39,7 +41,6 @@ export default function Reports() {
           `${e.start_time},${e.end_time || ""},${e.app_name},"${(e.window_title || "").replace(/"/g, '""')}",${e.category || ""},${e.project || ""},${Math.round(e.duration_seconds / 60)}`
       )
       .join("\n");
-
     const blob = new Blob([header + rows], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -78,13 +79,13 @@ export default function Reports() {
         <div className="flex gap-2">
           <button
             onClick={exportCSV}
-            className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+            className="px-4 py-2 text-sm bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-[#2a2a40] rounded-lg hover:bg-gray-50 dark:hover:bg-[#22223a] text-gray-700 dark:text-gray-300"
           >
             Export CSV
           </button>
           <button
             onClick={exportJSON}
-            className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+            className="px-4 py-2 text-sm bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-[#2a2a40] rounded-lg hover:bg-gray-50 dark:hover:bg-[#22223a] text-gray-700 dark:text-gray-300"
           >
             Export JSON
           </button>
@@ -92,17 +93,16 @@ export default function Reports() {
       </div>
 
       {/* Daily Summary */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#1a1a2e] rounded-xl p-6 border border-gray-200 dark:border-[#2a2a40] gradient-border">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-          Daily Report - {format(selectedDate, "MMM d, yyyy")}
+          Daily Report — {format(selectedDate, "MMM d, yyyy")}
         </h3>
-
         <div className="grid grid-cols-2 gap-6">
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
               Total Time
             </p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">
+            <p className="text-3xl font-bold text-gray-900 dark:bg-gradient-to-r dark:from-indigo-400 dark:to-purple-400 dark:bg-clip-text dark:text-transparent">
               {formatHours(totalSeconds)}
             </p>
           </div>
@@ -110,44 +110,59 @@ export default function Reports() {
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
               Events Tracked
             </p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">
+            <p className="text-3xl font-bold text-gray-900 dark:bg-gradient-to-r dark:from-indigo-400 dark:to-purple-400 dark:bg-clip-text dark:text-transparent">
               {events.length}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Category Breakdown */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-          Category Breakdown
-        </h3>
-        <div className="space-y-2">
-          {Object.entries(categoryMap)
-            .sort(([, a], [, b]) => b - a)
-            .map(([category, seconds]) => (
-              <div key={category} className="flex items-center gap-3">
-                <span className="text-sm w-28 text-gray-700 dark:text-gray-300">
-                  {CATEGORY_LABELS[category as Category] || category}
-                </span>
-                <div className="flex-1 h-6 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-indigo-500 rounded-full"
-                    style={{
-                      width: `${(seconds / totalSeconds) * 100}%`,
-                    }}
-                  />
-                </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400 w-16 text-right">
-                  {formatHours(seconds)}
-                </span>
-              </div>
-            ))}
+      {/* AI Insights */}
+      <AIInsights events={events} />
+
+      {/* Category Breakdown — Two columns: bars + pie */}
+      <div className="grid grid-cols-5 gap-4">
+        <div className="col-span-3 bg-white dark:bg-[#1a1a2e] rounded-xl p-6 border border-gray-200 dark:border-[#2a2a40]">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+            Category Breakdown
+          </h3>
+          <div className="space-y-2">
+            {Object.entries(categoryMap)
+              .sort(([, a], [, b]) => b - a)
+              .map(([category, seconds]) => {
+                const color =
+                  CATEGORY_COLORS[category as Category] || CATEGORY_COLORS.unknown;
+                return (
+                  <div key={category} className="flex items-center gap-3">
+                    <span className="text-sm w-28 text-gray-700 dark:text-gray-300">
+                      {CATEGORY_LABELS[category as Category] || category}
+                    </span>
+                    <div className="flex-1 h-6 bg-gray-100 dark:bg-[#12121e] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${(seconds / totalSeconds) * 100}%`,
+                          backgroundColor: color,
+                          boxShadow: `0 0 8px ${color}40`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 w-16 text-right tabular-nums">
+                      {formatHours(seconds)}
+                    </span>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+
+        <div className="col-span-2 bg-white dark:bg-[#1a1a2e] rounded-xl p-4 border border-gray-200 dark:border-[#2a2a40]">
+          <CategoryPieChart events={events} />
         </div>
       </div>
 
       {/* Project Breakdown */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#1a1a2e] rounded-xl p-6 border border-gray-200 dark:border-[#2a2a40]">
         <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
           Project Breakdown
         </h3>
@@ -159,15 +174,17 @@ export default function Reports() {
                 <span className="text-sm w-28 text-gray-700 dark:text-gray-300 truncate">
                   {project}
                 </span>
-                <div className="flex-1 h-6 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className="flex-1 h-6 bg-gray-100 dark:bg-[#12121e] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-green-500 rounded-full"
+                    className="h-full rounded-full"
                     style={{
                       width: `${(seconds / totalSeconds) * 100}%`,
+                      backgroundColor: "#6366f1",
+                      boxShadow: "0 0 8px rgba(99, 102, 241, 0.3)",
                     }}
                   />
                 </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400 w-16 text-right">
+                <span className="text-sm text-gray-500 dark:text-gray-400 w-16 text-right tabular-nums">
                   {formatHours(seconds)}
                 </span>
               </div>
