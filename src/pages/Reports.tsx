@@ -19,14 +19,12 @@ export default function Reports() {
 
   const totalSeconds = events.reduce((sum, e) => sum + e.duration_seconds, 0);
 
-  // Category breakdown
   const categoryMap: Record<string, number> = {};
   for (const event of events) {
     const cat = event.category || "unknown";
     categoryMap[cat] = (categoryMap[cat] || 0) + event.duration_seconds;
   }
 
-  // Project breakdown
   const projectMap: Record<string, number> = {};
   for (const event of events) {
     const proj = event.project || "Unclassified";
@@ -71,73 +69,53 @@ export default function Reports() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 overflow-auto h-full">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Reports
-        </h2>
+        <h2 className="text-2xl font-bold text-white">Reports</h2>
         <div className="flex gap-2">
-          <button
-            onClick={exportCSV}
-            className="px-4 py-2 text-sm bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-[#2a2a40] rounded-lg hover:bg-gray-50 dark:hover:bg-[#22223a] text-gray-700 dark:text-gray-300"
-          >
-            Export CSV
-          </button>
-          <button
-            onClick={exportJSON}
-            className="px-4 py-2 text-sm bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-[#2a2a40] rounded-lg hover:bg-gray-50 dark:hover:bg-[#22223a] text-gray-700 dark:text-gray-300"
-          >
-            Export JSON
-          </button>
+          <button onClick={exportCSV} className="btn-ghost text-sm">Export CSV</button>
+          <button onClick={exportJSON} className="btn-ghost text-sm">Export JSON</button>
         </div>
       </div>
 
       {/* Daily Summary */}
-      <div className="bg-white dark:bg-[#1a1a2e] rounded-xl p-6 border border-gray-200 dark:border-[#2a2a40] gradient-border">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+      <div className="bg-[#1a1a2e] rounded-xl p-6 border border-[#2a2a40] gradient-border">
+        <h3 className="text-lg font-medium text-white mb-4">
           Daily Report — {format(selectedDate, "MMM d, yyyy")}
         </h3>
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-              Total Time
-            </p>
-            <p className="text-3xl font-bold text-gray-900 dark:bg-gradient-to-r dark:from-indigo-400 dark:to-purple-400 dark:bg-clip-text dark:text-transparent">
+            <p className="text-sm text-gray-400 mb-1">Total Time</p>
+            <p className="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
               {formatHours(totalSeconds)}
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-              Events Tracked
-            </p>
-            <p className="text-3xl font-bold text-gray-900 dark:bg-gradient-to-r dark:from-indigo-400 dark:to-purple-400 dark:bg-clip-text dark:text-transparent">
+            <p className="text-sm text-gray-400 mb-1">Events Tracked</p>
+            <p className="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
               {events.length}
             </p>
           </div>
         </div>
       </div>
 
-      {/* AI Insights */}
       <AIInsights events={events} />
 
-      {/* Category Breakdown — Two columns: bars + pie */}
+      {/* Category Breakdown */}
       <div className="grid grid-cols-5 gap-4">
-        <div className="col-span-3 bg-white dark:bg-[#1a1a2e] rounded-xl p-6 border border-gray-200 dark:border-[#2a2a40]">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-            Category Breakdown
-          </h3>
+        <div className="col-span-3 bg-[#1a1a2e] rounded-xl p-6 border border-[#2a2a40]">
+          <h3 className="text-sm font-medium text-white mb-3">Category Breakdown</h3>
           <div className="space-y-2">
             {Object.entries(categoryMap)
               .sort(([, a], [, b]) => b - a)
               .map(([category, seconds]) => {
-                const color =
-                  CATEGORY_COLORS[category as Category] || CATEGORY_COLORS.unknown;
+                const color = CATEGORY_COLORS[category as Category] || CATEGORY_COLORS.unknown;
                 return (
                   <div key={category} className="flex items-center gap-3">
-                    <span className="text-sm w-28 text-gray-700 dark:text-gray-300">
+                    <span className="text-sm w-28 text-gray-300">
                       {CATEGORY_LABELS[category as Category] || category}
                     </span>
-                    <div className="flex-1 h-6 bg-gray-100 dark:bg-[#12121e] rounded-full overflow-hidden">
+                    <div className="flex-1 h-6 bg-[#12121e] rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all"
                         style={{
@@ -147,7 +125,7 @@ export default function Reports() {
                         }}
                       />
                     </div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 w-16 text-right tabular-nums">
+                    <span className="text-sm text-gray-400 w-16 text-right tabular-nums">
                       {formatHours(seconds)}
                     </span>
                   </div>
@@ -156,25 +134,21 @@ export default function Reports() {
           </div>
         </div>
 
-        <div className="col-span-2 bg-white dark:bg-[#1a1a2e] rounded-xl p-4 border border-gray-200 dark:border-[#2a2a40]">
+        <div className="col-span-2 bg-[#1a1a2e] rounded-xl p-4 border border-[#2a2a40]">
           <CategoryPieChart events={events} />
         </div>
       </div>
 
       {/* Project Breakdown */}
-      <div className="bg-white dark:bg-[#1a1a2e] rounded-xl p-6 border border-gray-200 dark:border-[#2a2a40]">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-          Project Breakdown
-        </h3>
+      <div className="bg-[#1a1a2e] rounded-xl p-6 border border-[#2a2a40]">
+        <h3 className="text-sm font-medium text-white mb-3">Project Breakdown</h3>
         <div className="space-y-2">
           {Object.entries(projectMap)
             .sort(([, a], [, b]) => b - a)
             .map(([project, seconds]) => (
               <div key={project} className="flex items-center gap-3">
-                <span className="text-sm w-28 text-gray-700 dark:text-gray-300 truncate">
-                  {project}
-                </span>
-                <div className="flex-1 h-6 bg-gray-100 dark:bg-[#12121e] rounded-full overflow-hidden">
+                <span className="text-sm w-28 text-gray-300 truncate">{project}</span>
+                <div className="flex-1 h-6 bg-[#12121e] rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full"
                     style={{
@@ -184,7 +158,7 @@ export default function Reports() {
                     }}
                   />
                 </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400 w-16 text-right tabular-nums">
+                <span className="text-sm text-gray-400 w-16 text-right tabular-nums">
                   {formatHours(seconds)}
                 </span>
               </div>

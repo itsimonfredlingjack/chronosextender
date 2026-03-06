@@ -11,10 +11,10 @@ function CenterLabel({ viewBox, totalHours }: { viewBox?: { cx: number; cy: numb
   const { cx, cy } = viewBox;
   return (
     <g>
-      <text x={cx} y={cy - 4} textAnchor="middle" className="fill-gray-900 dark:fill-white text-xl font-bold">
+      <text x={cx} y={cy - 4} textAnchor="middle" className="fill-white text-xl font-bold">
         {totalHours.toFixed(1)}
       </text>
-      <text x={cx} y={cy + 14} textAnchor="middle" className="fill-gray-400 dark:fill-gray-500 text-[10px]">
+      <text x={cx} y={cy + 14} textAnchor="middle" className="fill-gray-500 text-[10px]">
         hours
       </text>
     </g>
@@ -43,7 +43,7 @@ export default function CategoryPieChart({ events }: CategoryPieChartProps) {
 
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-gray-400 text-sm">
+      <div className="flex items-center justify-center h-48 text-gray-500 text-sm">
         No data yet
       </div>
     );
@@ -76,14 +76,14 @@ export default function CategoryPieChart({ events }: CategoryPieChartProps) {
               borderRadius: "8px",
               color: "#fff",
               fontSize: "12px",
+              backdropFilter: "blur(8px)",
             }}
           />
         </PieChart>
       </ResponsiveContainer>
-      {/* Legend */}
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
         {data.map((d) => (
-          <div key={d.category} className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+          <div key={d.category} className="flex items-center gap-1.5 text-xs text-gray-400">
             <span
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: d.color }}

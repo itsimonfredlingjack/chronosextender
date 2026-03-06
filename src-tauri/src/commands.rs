@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use tauri::State;
+use tauri::{Emitter, Manager, State};
 
 use crate::config::AppConfig;
 use crate::daemon::DaemonState;
@@ -32,6 +32,7 @@ pub async fn get_pending_events(state: State<'_, Arc<DaemonState>>) -> Result<Ve
 
 #[tauri::command]
 pub async fn reclassify_event(
+    app: tauri::AppHandle,
     state: State<'_, Arc<DaemonState>>,
     event_id: i64,
     project: Option<String>,
@@ -49,6 +50,7 @@ pub async fn reclassify_event(
         .db
         .update_event_classification(event_id, &result, "manual")
         .map_err(|e| e.to_string())?;
+    app.emit("events-changed", ()).ok();
     Ok(true)
 }
 
@@ -202,4 +204,46 @@ pub async fn get_flow_sessions(
         .db
         .get_flow_sessions_for_date(&date)
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn show_overlay(app: tauri::AppHandle) -> Result<()> {
+    if let Some(overlay) = app.get_webview_window("overlay") {
+        overlay.center().map_err(|e| e.to_string())?;
+        overlay.show().map_err(|e| e.to_string())?;
+        overlay.set_focus().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn hide_overlay(app: tauri::AppHandle) -> Result<()> {
+    if let Some(overlay) = app.get_webview_window("overlay") {
+        overlay.hide().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn show_dashboard(app: tauri::AppHandle) -> Result<()> {
+    if let Some(overlay) = app.get_webview_window("overlay") {
+        overlay.hide().ok();
+    }
+    if let Some(main) = app.get_webview_window("main") {
+        main.show().map_err(|e| e.to_string())?;
+        main.set_focus().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_pending_count(state: State<'_, Arc<DaemonState>>) -> Result<usize> {
+    let pending = state.db.get_pending_events().map_err(|e| e.to_string())?;
+    Ok(pending.len())
+}
+
+#[tauri::command]
+pub async fn get_tracking_active(state: State<'_, Arc<DaemonState>>) -> Result<bool> {
+    let paused = state.tracking_paused.lock().await;
+    Ok(!*paused)
 }

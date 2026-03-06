@@ -1,7 +1,7 @@
-import type { Event, Category, Session } from "../lib/types";
+import type { Event, Session } from "../lib/types";
 import { CATEGORY_COLORS, CATEGORY_LABELS } from "../lib/types";
 import { aggregateToSessions, formatDuration } from "../lib/sessions";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 
 interface TimelineBarProps {
   events: Event[];
@@ -13,181 +13,137 @@ interface TooltipData {
   y: number;
 }
 
-function computeTimeBounds(events: Event[]): { startHour: number; endHour: number } {
-  const now = new Date();
-  const currentHour = now.getHours();
-
-  if (events.length === 0) {
-    return {
-      startHour: Math.max(0, currentHour - 2),
-      endHour: Math.min(24, currentHour + 2),
-    };
-  }
-
-  let earliest = 24;
-  let latest = 0;
-
-  for (const e of events) {
-    const startH = new Date(e.start_time).getHours();
-    const endH = e.end_time ? new Date(e.end_time).getHours() + 1 : currentHour + 1;
-    earliest = Math.min(earliest, startH);
-    latest = Math.max(latest, endH);
-  }
-
-  // Include current time
-  latest = Math.max(latest, currentHour + 1);
-
-  // Add 1h padding
-  earliest = Math.max(0, earliest - 1);
-  latest = Math.min(24, latest + 1);
-
-  // Minimum 4h span
-  if (latest - earliest < 4) {
-    const mid = Math.floor((earliest + latest) / 2);
-    earliest = Math.max(0, mid - 2);
-    latest = Math.min(24, mid + 2);
-  }
-
-  return { startHour: earliest, endHour: latest };
-}
-
 export default function TimelineBar({ events }: TimelineBarProps) {
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
-  const [nowPosition, setNowPosition] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const sessions = useMemo(() => aggregateToSessions(events), [events]);
-  const { startHour, endHour } = useMemo(() => computeTimeBounds(events), [events]);
 
-  const totalMinutes = (endHour - startHour) * 60;
-
-  const hours = Array.from(
-    { length: endHour - startHour + 1 },
-    (_, i) => startHour + i
+  // Find max duration for height scaling
+  const maxDuration = useMemo(
+    () => Math.max(...sessions.map((s) => s.duration_seconds), 1),
+    [sessions]
   );
 
-  const getMinuteOffset = (timeStr: string) => {
-    const date = new Date(timeStr);
-    const minutes = date.getHours() * 60 + date.getMinutes() - startHour * 60;
-    return Math.max(0, Math.min(totalMinutes, minutes));
-  };
+  // Compute time bounds for proportional width
+  const timeBounds = useMemo(() => {
+    if (sessions.length === 0) return { startMin: 0, totalMin: 1 };
+    const now = new Date();
+    const firstStart = new Date(sessions[0].start_time);
+    const startMin = firstStart.getHours() * 60 + firstStart.getMinutes();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const totalMin = Math.max(nowMin - startMin, 60);
+    return { startMin, totalMin };
+  }, [sessions]);
 
-  // Update "now" needle every 30s
+  // Detect active (last session with no end_time on last event)
+  const activeSessionIdx = useMemo(() => {
+    if (sessions.length === 0) return -1;
+    const last = sessions[sessions.length - 1];
+    const lastEvent = last.events[last.events.length - 1];
+    return lastEvent.end_time ? -1 : sessions.length - 1;
+  }, [sessions]);
+
+  // Pulse animation for active bar
   useEffect(() => {
-    const updateNow = () => {
-      const now = new Date();
-      const mins = now.getHours() * 60 + now.getMinutes() - startHour * 60;
-      setNowPosition(Math.max(0, Math.min(100, (mins / totalMinutes) * 100)));
-    };
-    updateNow();
-    const id = setInterval(updateNow, 30000);
-    return () => clearInterval(id);
-  }, [startHour, totalMinutes]);
+    setActiveIndex(activeSessionIdx);
+  }, [activeSessionIdx]);
+
+  if (sessions.length === 0) return null;
 
   return (
-    <div className="relative">
-      {/* Hour labels */}
-      <div className="flex text-xs text-gray-400 dark:text-gray-500 mb-1">
-        {hours.map((h) => (
-          <div key={h} className="flex-1 text-center" style={{ minWidth: 0 }}>
-            {h}
-          </div>
-        ))}
-      </div>
-
-      {/* Timeline track */}
-      <div className="relative h-20 bg-gray-100 dark:bg-[#12121e] rounded-lg overflow-hidden">
+    <div ref={containerRef} className="relative">
+      {/* Waveform container */}
+      <div className="flex items-end gap-[2px] h-12">
         {sessions.map((session, i) => {
-          const startMin = getMinuteOffset(session.start_time);
-          const endMin = getMinuteOffset(session.end_time);
-          const durationMin = Math.max(endMin - startMin, session.duration_seconds / 60);
-          const left = (startMin / totalMinutes) * 100;
-          const width = Math.max(0.5, (durationMin / totalMinutes) * 100);
           const color = CATEGORY_COLORS[session.category] || CATEGORY_COLORS.unknown;
-          const label = CATEGORY_LABELS[session.category] || "Unknown";
-          const showLabel = width > 8;
+
+          // Height: proportional to duration (min 12%, max 100%)
+          const heightPct = Math.max(12, (session.duration_seconds / maxDuration) * 100);
+
+          // Width: proportional to time span in the day
+          const sessionStart = new Date(session.start_time);
+          const startMin = sessionStart.getHours() * 60 + sessionStart.getMinutes();
+          const spanMin = Math.max(session.duration_seconds / 60, 1);
+          const widthPct = Math.max(1.5, (spanMin / timeBounds.totalMin) * 100);
+
+          // Gap before this bar (idle time)
+          let gapPct = 0;
+          if (i > 0) {
+            const prevEnd = sessions[i - 1].end_time;
+            const prevEndMin = new Date(prevEnd).getHours() * 60 + new Date(prevEnd).getMinutes();
+            const gapMin = Math.max(0, startMin - prevEndMin);
+            gapPct = (gapMin / timeBounds.totalMin) * 100;
+          } else {
+            const gapMin = Math.max(0, startMin - timeBounds.startMin);
+            gapPct = (gapMin / timeBounds.totalMin) * 100;
+          }
+
+          const isActive = i === activeIndex;
 
           return (
             <div
               key={`${session.start_time}-${i}`}
-              className="absolute top-0 h-full cursor-pointer transition-opacity hover:opacity-80 flex items-center justify-center overflow-hidden rounded-sm"
-              style={{
-                left: `${left}%`,
-                width: `${width}%`,
-                backgroundColor: color,
-                boxShadow: `0 1px 8px ${color}30`,
-              }}
-              onMouseEnter={(e) =>
-                setTooltip({ session, x: e.clientX, y: e.clientY })
-              }
-              onMouseMove={(e) =>
-                setTooltip((prev) =>
-                  prev ? { ...prev, x: e.clientX, y: e.clientY } : null
-                )
-              }
-              onMouseLeave={() => setTooltip(null)}
+              className="flex items-end"
+              style={{ marginLeft: gapPct > 1.5 ? `${gapPct}%` : undefined }}
             >
-              {showLabel && (
-                <span className="text-[10px] font-medium text-white/90 truncate px-1">
-                  {label}
-                </span>
-              )}
+              <div
+                className={`rounded-sm cursor-pointer transition-all duration-300 hover:brightness-125 ${
+                  isActive ? "animate-waveform-pulse" : ""
+                }`}
+                style={{
+                  height: `${heightPct}%`,
+                  width: `max(3px, ${widthPct}%)`,
+                  minWidth: "3px",
+                  backgroundColor: color,
+                  boxShadow: `0 0 8px ${color}40, 0 0 2px ${color}20`,
+                  opacity: isActive ? 1 : 0.85,
+                }}
+                onMouseEnter={(e) =>
+                  setTooltip({ session, x: e.clientX, y: e.clientY })
+                }
+                onMouseMove={(e) =>
+                  setTooltip((prev) =>
+                    prev ? { ...prev, x: e.clientX, y: e.clientY } : null
+                  )
+                }
+                onMouseLeave={() => setTooltip(null)}
+              />
             </div>
           );
         })}
-
-        {/* Now needle */}
-        {nowPosition > 0 && nowPosition < 100 && (
-          <div
-            className="absolute top-0 h-full w-0.5 bg-red-500 z-10"
-            style={{
-              left: `${nowPosition}%`,
-              animation: "now-needle-pulse 2s ease-in-out infinite",
-            }}
-          >
-            <div className="absolute -top-1 -left-[3px] w-2 h-2 rounded-full bg-red-500" />
-          </div>
-        )}
       </div>
+
+      {/* Subtle baseline */}
+      <div className="h-px bg-white/[0.06] mt-1" />
 
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="fixed z-50 bg-white dark:bg-[#1a1a2e]/95 dark:backdrop-blur-md shadow-lg rounded-lg p-3 text-xs border border-gray-200 dark:border-[#2a2a40] pointer-events-none max-w-64"
+          className="fixed z-50 bg-[#1a1a2e]/95 backdrop-blur-md shadow-lg rounded-lg p-3 text-xs border border-[#2a2a40] pointer-events-none max-w-64"
           style={{ left: tooltip.x + 10, top: tooltip.y - 80 }}
         >
-          <p className="font-medium text-gray-900 dark:text-white">
-            {CATEGORY_LABELS[tooltip.session.category] || "Unknown"}
-          </p>
-          <p className="text-gray-500 dark:text-gray-400 mt-0.5">
+          <div className="flex items-center gap-2 mb-1">
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: CATEGORY_COLORS[tooltip.session.category] }}
+            />
+            <span className="font-medium text-white">
+              {CATEGORY_LABELS[tooltip.session.category] || "Unknown"}
+            </span>
+          </div>
+          <p className="text-gray-400">
             {tooltip.session.apps.join(", ")}
           </p>
-          <p className="text-gray-400 mt-1">
-            {formatDuration(tooltip.session.duration_seconds)} ·{" "}
-            {tooltip.session.events.length} event
-            {tooltip.session.events.length !== 1 ? "s" : ""}
+          <p className="text-gray-500 mt-1">
+            {formatDuration(tooltip.session.duration_seconds)}
+            {tooltip.session.project && (
+              <span className="text-gray-600"> · {tooltip.session.project}</span>
+            )}
           </p>
         </div>
       )}
-
-      {/* Category legend */}
-      <div className="flex flex-wrap gap-3 mt-3">
-        {Object.entries(CATEGORY_COLORS).map(([cat, color]) => {
-          const hasEvents = sessions.some((s) => s.category === cat);
-          if (!hasEvents) return null;
-          return (
-            <div
-              key={cat}
-              className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
-            >
-              <span
-                className="w-2.5 h-2.5 rounded-sm"
-                style={{ backgroundColor: color }}
-              />
-              {CATEGORY_LABELS[cat as Category]}
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }

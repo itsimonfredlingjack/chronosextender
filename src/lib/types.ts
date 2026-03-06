@@ -144,6 +144,31 @@ export interface RuleSuggestion {
   event_count: number;
 }
 
+export interface WorkBlock {
+  id: string;
+  label: string;
+  sessions: Session[];
+  events: Event[];
+  categories: Category[];
+  dominantCategory: Category;
+  apps: string[];
+  start_time: string;
+  end_time: string;
+  duration_seconds: number;
+  project: string | null;
+  approved: boolean;
+}
+
+export interface CommandAction {
+  id: string;
+  label: string;
+  description?: string;
+  icon: string;
+  category: "navigate" | "classify" | "log" | "toggle";
+  execute: () => void | Promise<void>;
+  keywords: string[];
+}
+
 export const CATEGORY_COLORS: Record<Category, string> = {
   coding: "#22c55e",
   communication: "#3b82f6",

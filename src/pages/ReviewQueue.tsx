@@ -4,15 +4,8 @@ import type { Event, Category } from "../lib/types";
 import { CATEGORY_LABELS } from "../lib/types";
 
 const categories: Category[] = [
-  "coding",
-  "communication",
-  "design",
-  "documentation",
-  "browsing",
-  "meeting",
-  "admin",
-  "entertainment",
-  "unknown",
+  "coding", "communication", "design", "documentation",
+  "browsing", "meeting", "admin", "entertainment", "unknown",
 ];
 
 export default function ReviewQueue() {
@@ -70,20 +63,15 @@ export default function ReviewQueue() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 overflow-auto h-full">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Review Queue
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <h2 className="text-2xl font-bold text-white">Review Queue</h2>
+          <p className="text-sm text-gray-400">
             {events.length} events need classification
           </p>
         </div>
-        <button
-          onClick={loadEvents}
-          className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-        >
+        <button onClick={loadEvents} className="btn-ghost text-sm">
           Refresh
         </button>
       </div>
@@ -123,18 +111,14 @@ function ReviewItem({
   const [project, setProject] = useState(event.project || "");
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+    <div className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40]">
       <div className="flex items-start gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 dark:text-white">
-            {event.app_name}
-          </p>
+          <p className="text-sm font-medium text-white">{event.app_name}</p>
           {event.window_title && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-              {event.window_title}
-            </p>
+            <p className="text-xs text-gray-400 truncate">{event.window_title}</p>
           )}
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 mt-1">
             {new Date(event.start_time).toLocaleTimeString()} -{" "}
             {Math.round(event.duration_seconds / 60)}m
             {event.confidence > 0 && (
@@ -149,7 +133,7 @@ function ReviewItem({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="text-xs px-2 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="text-xs px-2 py-1.5 border border-[#2a2a40] rounded-lg bg-[#12121e] text-white"
           >
             {categories.map((cat) => (
               <option key={cat} value={cat}>
@@ -162,14 +146,12 @@ function ReviewItem({
             value={project}
             onChange={(e) => setProject(e.target.value)}
             placeholder="Project"
-            className="text-xs px-2 py-1.5 w-24 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="text-xs px-2 py-1.5 w-24 border border-[#2a2a40] rounded-lg bg-[#12121e] text-white"
           />
 
           <button
-            onClick={() =>
-              onClassify(event.id, selectedCategory, project || null)
-            }
-            className="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            onClick={() => onClassify(event.id, selectedCategory, project || null)}
+            className="btn-primary text-xs"
           >
             Save
           </button>
@@ -179,7 +161,7 @@ function ReviewItem({
               onClassify(event.id, selectedCategory, project || null);
               onCreateRule(event, selectedCategory);
             }}
-            className="text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+            className="btn-ghost text-xs"
             title="Save and create a rule for this app"
           >
             + Rule

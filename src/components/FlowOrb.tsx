@@ -16,7 +16,7 @@ export default function FlowOrb({ flowStatus }: FlowOrbProps) {
               ? "bg-indigo-500 shadow-lg shadow-indigo-500/50 animate-pulse"
               : current_app
               ? "bg-green-500"
-              : "bg-gray-400"
+              : "bg-gray-500"
           }`}
         >
           {duration_minutes > 0 ? `${duration_minutes}m` : "--"}
@@ -26,13 +26,11 @@ export default function FlowOrb({ flowStatus }: FlowOrbProps) {
         )}
       </div>
       <div>
-        <p className="text-sm font-medium text-gray-900 dark:text-white">
+        <p className="text-sm font-medium text-white">
           {in_flow ? "In Flow" : current_app ? "Tracking" : "Idle"}
         </p>
         {current_app && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-40">
-            {current_app}
-          </p>
+          <p className="text-xs text-gray-400 truncate max-w-40">{current_app}</p>
         )}
       </div>
     </div>

@@ -35,20 +35,17 @@ export default function RuleSuggestions() {
   if (visible.length === 0) return null;
 
   return (
-    <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800/40">
-      <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-3">
+    <div className="bg-amber-900/20 rounded-xl p-5 border border-amber-800/40 card-elevated">
+      <h3 className="text-sm font-medium text-amber-200 mb-3">
         Rule Suggestions
       </h3>
       <div className="space-y-2">
         {visible.map((s) => (
-          <div
-            key={s.app_name}
-            className="flex items-center gap-3 text-sm"
-          >
-            <span className="text-gray-700 dark:text-gray-300 flex-1">
+          <div key={s.app_name} className="flex items-center gap-3 text-sm">
+            <span className="text-gray-300 flex-1">
               <strong>{s.app_name}</strong> is always{" "}
-              <span className="text-indigo-500">{s.suggested_category}</span>
-              <span className="text-xs text-gray-400 ml-1">
+              <span className="text-indigo-400">{s.suggested_category}</span>
+              <span className="text-xs text-gray-500 ml-1">
                 ({s.event_count} events)
               </span>
             </span>
@@ -60,7 +57,7 @@ export default function RuleSuggestions() {
             </button>
             <button
               onClick={() => handleDismiss(s.app_name)}
-              className="px-3 py-1 text-xs bg-gray-200 dark:bg-[#22223a] text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+              className="px-3 py-1 text-xs bg-[#22223a] text-gray-300 rounded-lg hover:bg-[#2a2a40]"
             >
               Ignore
             </button>

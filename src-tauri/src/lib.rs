@@ -9,14 +9,27 @@ use std::sync::Arc;
 use daemon::DaemonState;
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
-    tray::TrayIconBuilder,
-    Manager,
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    Manager, WindowEvent,
 };
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tokio::sync::Mutex;
 
 use config::AppConfig;
 use db::Database;
 use models::{FlowStatus, OllamaStatus};
+
+fn toggle_overlay(app: &tauri::AppHandle) {
+    if let Some(overlay) = app.get_webview_window("overlay") {
+        if overlay.is_visible().unwrap_or(false) {
+            overlay.hide().ok();
+        } else {
+            overlay.center().ok();
+            overlay.show().ok();
+            overlay.set_focus().ok();
+        }
+    }
+}
 
 fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let dashboard = MenuItem::with_id(app, "dashboard", "Open Dashboard", true, None::<&str>)?;
@@ -29,12 +42,26 @@ fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     TrayIconBuilder::new()
         .icon(app.default_window_icon().unwrap().clone())
         .menu(&menu)
+        .show_menu_on_left_click(false)
         .tooltip("Chronos AI - Tracking")
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                toggle_overlay(tray.app_handle());
+            }
+        })
         .on_menu_event(|app, event| match event.id.as_ref() {
             "quit" => {
                 app.exit(0);
             }
             "dashboard" => {
+                if let Some(overlay) = app.get_webview_window("overlay") {
+                    overlay.hide().ok();
+                }
                 if let Some(window) = app.get_webview_window("main") {
                     window.show().ok();
                     window.set_focus().ok();
@@ -79,6 +106,15 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _shortcut, event| {
+                    if event.state == ShortcutState::Pressed {
+                        toggle_overlay(app);
+                    }
+                })
+                .build(),
+        )
         .manage(daemon_state.clone())
         .invoke_handler(tauri::generate_handler![
             commands::get_today_events,
@@ -98,9 +134,28 @@ pub fn run() {
             commands::get_project_summary,
             commands::toggle_tracking,
             commands::get_flow_sessions,
+            commands::show_overlay,
+            commands::hide_overlay,
+            commands::show_dashboard,
+            commands::get_pending_count,
+            commands::get_tracking_active,
         ])
+        .on_window_event(|window, event| {
+            // Close button hides main window to tray instead of quitting
+            if window.label() == "main" {
+                if let WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    window.hide().ok();
+                }
+            }
+        })
         .setup(move |app| {
             setup_tray(app)?;
+
+            // Register Cmd+Shift+T global shortcut
+            let shortcut =
+                Shortcut::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::KeyT);
+            app.global_shortcut().register(shortcut)?;
 
             let handle = app.handle().clone();
             let state = daemon_state.clone();

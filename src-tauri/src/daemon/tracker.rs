@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use active_win_pos_rs::get_active_window;
 use chrono::Local;
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 
 use super::DaemonState;
 use crate::models::NewEvent;
@@ -143,6 +143,12 @@ pub async fn run(app_handle: AppHandle, state: Arc<DaemonState>) {
                                 "New event: {} - {} (id: {})",
                                 app_name, window_title, event_id
                             );
+
+                            app_handle.emit("window-changed", serde_json::json!({
+                                "event_id": event_id,
+                                "app_name": &app_name,
+                                "window_title": &window_title,
+                            })).ok();
                         }
                         Err(e) => {
                             log::error!("Failed to insert event: {}", e);

@@ -5,23 +5,41 @@
   "identifier": "dev.chronos.app",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:1430",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Chronos AI",
-        "width": 1200,
-        "height": 800,
-        "minWidth": 900,
-        "minHeight": 600
+        "width": 680,
+        "height": 520,
+        "minWidth": 480,
+        "minHeight": 400,
+        "visible": true,
+        "url": "/dashboard"
+      },
+      {
+        "label": "overlay",
+        "title": "Chronos Overlay",
+        "width": 500,
+        "height": 400,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "resizable": false,
+        "center": true,
+        "url": "/overlay"
       }
     ],
     "security": {
       "csp": null
-    }
+    },
+    "macOSPrivateApi": true
   },
   "bundle": {
     "active": true,

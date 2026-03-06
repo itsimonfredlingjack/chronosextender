@@ -32,18 +32,14 @@ export default function EventCard({ event, compact }: EventCardProps) {
           className="w-2 h-2 rounded-full shrink-0"
           style={{ backgroundColor: color }}
         />
-        <span className="text-sm text-gray-900 dark:text-white truncate flex-1">
-          {event.app_name}
-        </span>
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          {formatDuration(event.duration_seconds)}
-        </span>
+        <span className="text-sm text-white truncate flex-1">{event.app_name}</span>
+        <span className="text-xs text-gray-400">{formatDuration(event.duration_seconds)}</span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-start gap-3 p-3 bg-white dark:bg-[#1a1a2e] rounded-lg border border-gray-200 dark:border-[#2a2a40]">
+    <div className="flex items-start gap-3 p-3 bg-[#1a1a2e] rounded-lg border border-[#2a2a40]">
       <div
         className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0"
         style={{ backgroundColor: color }}
@@ -52,9 +48,7 @@ export default function EventCard({ event, compact }: EventCardProps) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
-            {event.app_name}
-          </span>
+          <span className="text-sm font-medium text-white truncate">{event.app_name}</span>
           <span
             className="text-xs px-1.5 py-0.5 rounded-full text-white shrink-0"
             style={{ backgroundColor: color }}
@@ -63,20 +57,16 @@ export default function EventCard({ event, compact }: EventCardProps) {
           </span>
         </div>
         {event.window_title && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-            {event.window_title}
-          </p>
+          <p className="text-xs text-gray-400 truncate mt-0.5">{event.window_title}</p>
         )}
-        <div className="flex items-center gap-3 mt-1 text-xs text-gray-400 dark:text-gray-500">
+        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
           <span>{formatTime(event.start_time)}</span>
           <span>{formatDuration(event.duration_seconds)}</span>
-          {event.project && (
-            <span className="text-indigo-500">{event.project}</span>
-          )}
+          {event.project && <span className="text-indigo-400">{event.project}</span>}
           <span title={event.classification_source}>
-            {event.classification_source === "rule" && "⊞"}
-            {event.classification_source === "llm" && "⚡"}
-            {event.classification_source === "manual" && "✓"}
+            {event.classification_source === "rule" && "\u229E"}
+            {event.classification_source === "llm" && "\u26A1"}
+            {event.classification_source === "manual" && "\u2713"}
             {event.classification_source === "pending" && "?"}
           </span>
         </div>

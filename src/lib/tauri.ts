@@ -62,4 +62,10 @@ export const api = {
     invoke<ProjectSummary>("get_project_summary", { start, end }),
 
   toggleTracking: () => invoke<boolean>("toggle_tracking"),
+
+  showOverlay: () => invoke("show_overlay"),
+  hideOverlay: () => invoke("hide_overlay"),
+  showDashboard: () => invoke("show_dashboard"),
+  getPendingCount: () => invoke<number>("get_pending_count"),
+  getTrackingActive: () => invoke<boolean>("get_tracking_active"),
 };
