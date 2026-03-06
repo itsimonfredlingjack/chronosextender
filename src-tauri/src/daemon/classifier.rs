@@ -5,7 +5,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use super::DaemonState;
-use crate::models::ClassificationResult;
+use crate::models::{ClassificationResult, NlpParsedEntry};
 
 #[derive(Serialize)]
 struct OllamaRequest {
@@ -496,4 +496,105 @@ pub async fn generate_daily_summary(
 
     log::info!("Daily summary generated for {}", date);
     Ok(content)
+}
+
+// --- NLP time entry parsing ---
+
+const NLP_SYSTEM_PROMPT: &str = r#"You parse natural language time entries into JSON. Today is {today}.
+Return a JSON array: [{"date":"YYYY-MM-DD", "duration_minutes":<int>,
+"category":"<coding|communication|design|documentation|browsing|meeting|admin|entertainment>",
+"project":"<name or null>", "task_description":"<short>"}]
+If user says "yesterday" or "igår", use {yesterday}. If they say "idag" or "today", use {today}.
+Estimate duration if vague (e.g. "a bit" = 30min, "morning" = 3h).
+Swedish and English input both supported. Always respond with JSON array only."#;
+
+pub async fn parse_nlp_time_entry(
+    state: &Arc<DaemonState>,
+    input: &str,
+) -> Result<Vec<NlpParsedEntry>, String> {
+    let config = state.config.lock().await;
+    let ollama_url = config.ai.ollama_url.clone();
+    let tier1 = config.ai.tier1_model.clone();
+    let tier2 = config.ai.tier2_model.clone();
+    let timeout = config.ai.classify_timeout_ms;
+    drop(config);
+
+    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+    let yesterday = (chrono::Local::now() - chrono::Duration::days(1))
+        .format("%Y-%m-%d")
+        .to_string();
+
+    let system_prompt = NLP_SYSTEM_PROMPT
+        .replace("{today}", &today)
+        .replace("{yesterday}", &yesterday);
+
+    // Model swap: use Tier 2 for NLP parsing
+    unload_model(&ollama_url, &tier1).await;
+    load_model_temp(&ollama_url, &tier2).await;
+
+    let request = OllamaRequest {
+        model: tier2.clone(),
+        messages: vec![
+            OllamaMessage {
+                role: "system".to_string(),
+                content: system_prompt,
+            },
+            OllamaMessage {
+                role: "user".to_string(),
+                content: input.to_string(),
+            },
+        ],
+        stream: false,
+        format: "json".to_string(),
+        think: false,
+        options: OllamaOptions {
+            temperature: 0.1,
+            num_predict: 500,
+        },
+    };
+
+    let client = reqwest::Client::new();
+    let response = tokio::time::timeout(
+        Duration::from_millis(timeout * 3),
+        client
+            .post(format!("{}/api/chat", ollama_url))
+            .json(&request)
+            .send(),
+    )
+    .await
+    .map_err(|_| "NLP parsing timed out".to_string())?
+    .map_err(|e| e.to_string())?;
+
+    let ollama_response: OllamaResponse = response.json().await.map_err(|e| e.to_string())?;
+    let content = ollama_response
+        .message
+        .ok_or("No message in NLP response")?
+        .content;
+
+    // Model swap back
+    unload_model(&ollama_url, &tier2).await;
+    load_model_permanent(&ollama_url, &tier1).await;
+
+    // Parse response — try as array first, then as object wrapping an array
+    if let Ok(entries) = serde_json::from_str::<Vec<NlpParsedEntry>>(&content) {
+        return Ok(entries);
+    }
+
+    // Some models wrap in {"entries": [...]} or similar
+    if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
+        // Try to find any array in the top-level object
+        if let Some(obj) = val.as_object() {
+            for (_key, value) in obj {
+                if let Ok(entries) = serde_json::from_value::<Vec<NlpParsedEntry>>(value.clone()) {
+                    return Ok(entries);
+                }
+            }
+        }
+        // Try as single entry wrapped in object
+        if let Ok(entry) = serde_json::from_value::<NlpParsedEntry>(val) {
+            return Ok(vec![entry]);
+        }
+    }
+
+    Err(format!("Failed to parse NLP response: {}", content))
 }

@@ -159,6 +159,36 @@ export interface WorkBlock {
   approved: boolean;
 }
 
+export interface NlpLogResult {
+  events_created: number;
+  entries: NlpParsedEntry[];
+}
+
+export interface NlpParsedEntry {
+  date: string;
+  duration_minutes: number;
+  category: string;
+  project: string | null;
+  task_description: string;
+}
+
+export interface Summary {
+  id: number;
+  period_type: string;
+  period_start: string;
+  period_end: string;
+  summary_json: string;
+  generated_at: string;
+}
+
+export interface DailySummaryData {
+  total_hours: number;
+  top_category: string;
+  top_project: string;
+  summary: string;
+  productivity_score: number;
+}
+
 export interface CommandAction {
   id: string;
   label: string;

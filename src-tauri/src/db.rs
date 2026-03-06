@@ -466,6 +466,49 @@ impl Database {
         Ok(conn.last_insert_rowid())
     }
 
+    // --- Manual Events ---
+
+    pub fn insert_manual_event(
+        &self,
+        start_time: &str,
+        end_time: &str,
+        duration_seconds: i64,
+        category: &str,
+        project: Option<&str>,
+        task_description: Option<&str>,
+    ) -> Result<i64> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO events (start_time, end_time, app_bundle_id, app_name, duration_seconds,
+             category, project, task_description, confidence, classification_source)
+             VALUES (?1, ?2, 'manual', 'Manual Entry', ?3, ?4, ?5, ?6, 1.0, 'manual')",
+            params![start_time, end_time, duration_seconds, category, project, task_description],
+        )?;
+        Ok(conn.last_insert_rowid())
+    }
+
+    // --- Daily Summary ---
+
+    pub fn get_daily_summary(&self, date: &str) -> Result<Option<Summary>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, period_type, period_start, period_end, summary_json, generated_at
+             FROM summaries WHERE period_type = 'daily' AND period_start = ?1
+             ORDER BY generated_at DESC LIMIT 1",
+        )?;
+        let mut rows = stmt.query_map(params![date], |row| {
+            Ok(Summary {
+                id: row.get(0)?,
+                period_type: row.get(1)?,
+                period_start: row.get(2)?,
+                period_end: row.get(3)?,
+                summary_json: row.get(4)?,
+                generated_at: row.get(5)?,
+            })
+        })?;
+        Ok(rows.next().transpose()?)
+    }
+
     // --- Flow Sessions ---
 
     pub fn insert_flow_session(

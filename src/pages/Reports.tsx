@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { format, addDays, subDays } from "date-fns";
 import { useEvents } from "../hooks/useEvents";
 import { api } from "../lib/tauri";
-import type { Category, ProjectSummary } from "../lib/types";
+import type { Category, ProjectSummary, DailySummaryData } from "../lib/types";
 import { CATEGORY_LABELS, CATEGORY_COLORS } from "../lib/types";
+import { computeLeakage } from "../lib/leakage";
 import CategoryPieChart from "../components/CategoryPieChart";
 
 function formatHours(seconds: number): string {
@@ -17,15 +18,49 @@ export default function Reports() {
   const dateStr = format(selectedDate, "yyyy-MM-dd");
   const { events, loading } = useEvents(dateStr);
   const [projectSummary, setProjectSummary] = useState<ProjectSummary | null>(null);
+  const [summary, setSummary] = useState<DailySummaryData | null>(null);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
 
   const isToday = format(new Date(), "yyyy-MM-dd") === dateStr;
+
+  const leakage = useMemo(() => computeLeakage(events), [events]);
 
   useEffect(() => {
     api
       .getProjectSummary(dateStr, dateStr)
       .then(setProjectSummary)
       .catch(() => setProjectSummary(null));
+    api
+      .getDailySummary(dateStr)
+      .then((s) => {
+        if (s) {
+          try {
+            setSummary(JSON.parse(s.summary_json));
+          } catch {
+            setSummary(null);
+          }
+        } else {
+          setSummary(null);
+        }
+      })
+      .catch(() => setSummary(null));
   }, [dateStr]);
+
+  const handleGenerateSummary = async () => {
+    setGeneratingSummary(true);
+    try {
+      const raw = await api.triggerDailySummary(dateStr);
+      try {
+        setSummary(JSON.parse(raw));
+      } catch {
+        setSummary(null);
+      }
+    } catch {
+      // summary generation failed
+    } finally {
+      setGeneratingSummary(false);
+    }
+  };
 
   const totalSeconds = events.reduce((sum, e) => sum + e.duration_seconds, 0);
 
@@ -129,7 +164,7 @@ export default function Reports() {
       ) : (
         <>
           {/* Summary row */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <div className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40]">
               <p className="text-xs text-gray-500 mb-1">Total</p>
               <p className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
@@ -141,12 +176,18 @@ export default function Reports() {
               <p className="text-xl font-bold text-emerald-400">
                 {projectSummary
                   ? `${projectSummary.billable_hours.toFixed(1)}h`
-                  : "—"}
+                  : "\u2014"}
               </p>
             </div>
             <div className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40]">
               <p className="text-xs text-gray-500 mb-1">Events</p>
               <p className="text-xl font-bold text-white">{events.length}</p>
+            </div>
+            <div className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40]">
+              <p className="text-xs text-gray-500 mb-1">Coverage</p>
+              <p className="text-xl font-bold text-amber-400">
+                {leakage.coveragePct.toFixed(0)}%
+              </p>
             </div>
           </div>
 
@@ -233,6 +274,40 @@ export default function Reports() {
               </div>
             </div>
           )}
+
+          {/* AI Summary */}
+          <div className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40]">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-medium text-gray-400">AI Summary</h3>
+              <button
+                onClick={handleGenerateSummary}
+                disabled={generatingSummary}
+                className="btn-ghost text-xs"
+              >
+                {generatingSummary
+                  ? "Generating..."
+                  : summary
+                    ? "Regenerate"
+                    : "Generate"}
+              </button>
+            </div>
+            {summary ? (
+              <>
+                <p className="text-sm text-gray-300">{summary.summary}</p>
+                <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                  <span>Score: {summary.productivity_score}/10</span>
+                  <span>Top: {summary.top_category}</span>
+                  {summary.top_project && summary.top_project !== "Various" && (
+                    <span>Project: {summary.top_project}</span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-gray-500">
+                Click Generate for an AI summary of this day
+              </p>
+            )}
+          </div>
         </>
       )}
     </div>

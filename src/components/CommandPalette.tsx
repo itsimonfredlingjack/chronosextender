@@ -7,6 +7,7 @@ import {
   createClassifyActions,
   filterCommands,
 } from "../lib/commands";
+import { api } from "../lib/tauri";
 
 interface Props {
   isOpen: boolean;
@@ -16,6 +17,8 @@ interface Props {
 export default function CommandPalette({ isOpen, onClose }: Props) {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [nlpLoading, setNlpLoading] = useState(false);
+  const [nlpResult, setNlpResult] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -33,6 +36,25 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
     [actions, query]
   );
 
+  const showNlpAction = filtered.length === 0 && query.trim().length > 10;
+
+  const handleNlpLog = async () => {
+    if (nlpLoading) return;
+    setNlpLoading(true);
+    setNlpResult(null);
+    try {
+      const result = await api.logTimeNlp(query.trim());
+      setNlpResult(`Created ${result.events_created} entr${result.events_created === 1 ? "y" : "ies"}`);
+      setTimeout(() => {
+        onClose();
+      }, 1200);
+    } catch (err) {
+      setNlpResult(`Error: ${err}`);
+    } finally {
+      setNlpLoading(false);
+    }
+  };
+
   useEffect(() => {
     setSelectedIndex(0);
   }, [query]);
@@ -41,6 +63,8 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
     if (isOpen) {
       setQuery("");
       setSelectedIndex(0);
+      setNlpLoading(false);
+      setNlpResult(null);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [isOpen]);
@@ -51,13 +75,18 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedIndex((i) => Math.min(i + 1, filtered.length - 1));
+        const maxIndex = showNlpAction ? 0 : filtered.length - 1;
+        setSelectedIndex((i) => Math.min(i + 1, maxIndex));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedIndex((i) => Math.max(i - 1, 0));
-      } else if (e.key === "Enter" && filtered[selectedIndex]) {
+      } else if (e.key === "Enter") {
         e.preventDefault();
-        filtered[selectedIndex].execute();
+        if (showNlpAction) {
+          handleNlpLog();
+        } else if (filtered[selectedIndex]) {
+          filtered[selectedIndex].execute();
+        }
       } else if (e.key === "Escape") {
         e.preventDefault();
         onClose();
@@ -66,7 +95,7 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, filtered, selectedIndex, onClose]);
+  }, [isOpen, filtered, selectedIndex, onClose, showNlpAction, query]);
 
   if (!isOpen) return null;
 
@@ -88,7 +117,7 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type a command..."
+            placeholder="Type a command or describe work to log..."
             className="flex-1 py-3 bg-transparent text-sm text-white placeholder-gray-500 outline-none"
           />
           <kbd className="text-xs px-1.5 py-0.5 rounded bg-[#12121e] text-gray-500 border border-[#2a2a40]">
@@ -98,7 +127,37 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
 
         {/* Results */}
         <div className="max-h-80 overflow-auto">
-          {filtered.length === 0 ? (
+          {showNlpAction ? (
+            <button
+              onClick={handleNlpLog}
+              disabled={nlpLoading}
+              className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors outline-none ${
+                nlpResult
+                  ? "bg-emerald-500/10 text-emerald-300"
+                  : "bg-indigo-500/10 text-indigo-300"
+              }`}
+            >
+              <span className="text-base w-6 text-center shrink-0">
+                {nlpLoading ? (
+                  <span className="inline-block w-4 h-4 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
+                ) : nlpResult ? (
+                  "\u2713"
+                ) : (
+                  "\u23F1"
+                )}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {nlpResult || (nlpLoading ? "Parsing with AI..." : `Log time: ${query.trim()}`)}
+                </p>
+                {!nlpResult && !nlpLoading && (
+                  <p className="text-xs text-gray-400 truncate">
+                    AI will parse your description into time entries
+                  </p>
+                )}
+              </div>
+            </button>
+          ) : filtered.length === 0 ? (
             <p className="px-4 py-6 text-sm text-gray-500 text-center">
               No matching commands
             </p>
@@ -134,6 +193,7 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
           <span>{"\u2191\u2193"} navigate</span>
           <span>{"\u21B5"} select</span>
           <span>esc close</span>
+          <span className="ml-auto text-gray-600">describe work to log</span>
         </div>
       </div>
     </div>,

@@ -141,6 +141,8 @@ pub fn run() {
             commands::get_tracking_active,
             commands::trigger_batch_reclassify,
             commands::trigger_daily_summary,
+            commands::log_time_nlp,
+            commands::get_daily_summary,
         ])
         .on_window_event(|window, event| {
             // Close button hides main window to tray instead of quitting

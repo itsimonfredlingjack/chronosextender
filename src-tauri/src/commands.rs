@@ -289,3 +289,54 @@ pub async fn trigger_daily_summary(
         .await
         .map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub async fn log_time_nlp(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<DaemonState>>,
+    input: String,
+) -> Result<NlpLogResult> {
+    let entries = crate::daemon::classifier::parse_nlp_time_entry(&state, &input).await?;
+
+    let mut events_created = 0;
+    for entry in &entries {
+        // Compute start/end times: place at noon of the given date, offset by duration
+        let start = format!("{}T12:00:00", entry.date);
+        let duration_secs = entry.duration_minutes * 60;
+        let end_dt = chrono::NaiveDateTime::parse_from_str(&start, "%Y-%m-%dT%H:%M:%S")
+            .map_err(|e| e.to_string())?
+            + chrono::Duration::seconds(duration_secs);
+        let end = end_dt.format("%Y-%m-%dT%H:%M:%S").to_string();
+
+        state
+            .db
+            .insert_manual_event(
+                &start,
+                &end,
+                duration_secs,
+                &entry.category,
+                entry.project.as_deref(),
+                Some(&entry.task_description),
+            )
+            .map_err(|e| e.to_string())?;
+        events_created += 1;
+    }
+
+    app.emit("events-changed", ()).ok();
+
+    Ok(NlpLogResult {
+        events_created,
+        entries,
+    })
+}
+
+#[tauri::command]
+pub async fn get_daily_summary(
+    state: State<'_, Arc<DaemonState>>,
+    date: String,
+) -> Result<Option<Summary>> {
+    state
+        .db
+        .get_daily_summary(&date)
+        .map_err(|e| e.to_string())
+}

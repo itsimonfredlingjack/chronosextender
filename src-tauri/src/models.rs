@@ -140,6 +140,21 @@ pub struct RuleSuggestion {
     pub event_count: i64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NlpLogResult {
+    pub events_created: usize,
+    pub entries: Vec<NlpParsedEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NlpParsedEntry {
+    pub date: String,
+    pub duration_minutes: i64,
+    pub category: String,
+    pub project: Option<String>,
+    pub task_description: String,
+}
+
 pub const CATEGORIES: &[&str] = &[
     "coding",
     "communication",

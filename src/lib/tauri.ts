@@ -5,12 +5,14 @@ import type {
   FlowStatus,
   NewProject,
   NewRule,
+  NlpLogResult,
   OllamaStatus,
   Project,
   ProjectSummary,
   Rule,
   RuleSuggestion,
   Settings,
+  Summary,
 } from "./types";
 
 export const api = {
@@ -70,4 +72,6 @@ export const api = {
   getTrackingActive: () => invoke<boolean>("get_tracking_active"),
   triggerBatchReclassify: () => invoke<number>("trigger_batch_reclassify"),
   triggerDailySummary: (date: string) => invoke<string>("trigger_daily_summary", { date }),
+  logTimeNlp: (input: string) => invoke<NlpLogResult>("log_time_nlp", { input }),
+  getDailySummary: (date: string) => invoke<Summary | null>("get_daily_summary", { date }),
 };
