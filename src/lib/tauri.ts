@@ -68,4 +68,6 @@ export const api = {
   showDashboard: () => invoke("show_dashboard"),
   getPendingCount: () => invoke<number>("get_pending_count"),
   getTrackingActive: () => invoke<boolean>("get_tracking_active"),
+  triggerBatchReclassify: () => invoke<number>("trigger_batch_reclassify"),
+  triggerDailySummary: (date: string) => invoke<string>("trigger_daily_summary", { date }),
 };

@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { useEvents } from "../hooks/useEvents";
+import { api } from "../lib/tauri";
 import { aggregateToWorkBlocks } from "../lib/workblocks";
 import WorkBlockCard from "../components/WorkBlockCard";
 
 export default function ReviewQueue() {
   const { events, loading, refresh } = useEvents();
   const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set());
+  const [reclassifying, setReclassifying] = useState(false);
 
   useEffect(() => {
     const unlisten = listen("events-changed", () => {
@@ -23,6 +25,21 @@ export default function ReviewQueue() {
   const handleApproved = useCallback((blockId: string) => {
     setApprovedIds((prev) => new Set(prev).add(blockId));
   }, []);
+
+  const handleReclassify = async () => {
+    setReclassifying(true);
+    try {
+      const count = await api.triggerBatchReclassify();
+      if (count > 0) {
+        setApprovedIds(new Set());
+        refresh();
+      }
+    } catch (e) {
+      console.error("Batch reclassify failed:", e);
+    } finally {
+      setReclassifying(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -43,6 +60,20 @@ export default function ReviewQueue() {
               : `${pendingBlocks.length} work block${pendingBlocks.length !== 1 ? "s" : ""} to review`}
           </p>
         </div>
+        <button
+          onClick={handleReclassify}
+          disabled={reclassifying}
+          className="btn-ghost text-xs flex items-center gap-1.5"
+        >
+          {reclassifying ? (
+            <>
+              <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
+              AI processing...
+            </>
+          ) : (
+            "Reclassify (AI)"
+          )}
+        </button>
       </div>
 
       {pendingBlocks.length === 0 ? (

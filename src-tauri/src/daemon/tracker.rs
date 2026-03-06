@@ -120,6 +120,7 @@ pub async fn run(app_handle: AppHandle, state: Arc<DaemonState>) {
                                     &classify_title,
                                     &classify_bundle,
                                     None,
+                                    0,
                                 )
                                 .await;
                             });

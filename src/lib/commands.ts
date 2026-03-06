@@ -23,23 +23,23 @@ export function createNavActions(
   return [
     {
       id: "nav-dashboard",
-      label: "Go to Dashboard",
+      label: "Go to Pulse",
       icon: "\u25C9",
-      keywords: ["dashboard", "home", "main"],
+      keywords: ["dashboard", "home", "main", "pulse"],
       execute: () => { navigate("/"); onClose(); },
     },
     {
-      id: "nav-action-center",
-      label: "Go to Action Center",
-      icon: "\u26A1",
-      keywords: ["action", "center", "review", "pending"],
-      execute: () => { navigate("/action-center"); onClose(); },
+      id: "nav-review",
+      label: "Go to Review",
+      icon: "\u2630",
+      keywords: ["review", "pending", "blocks", "confirm"],
+      execute: () => { navigate("/review"); onClose(); },
     },
     {
       id: "nav-reports",
       label: "Go to Reports",
       icon: "\u25A4",
-      keywords: ["reports", "summary", "analytics"],
+      keywords: ["reports", "summary", "analytics", "export"],
       execute: () => { navigate("/reports"); onClose(); },
     },
     {
@@ -61,6 +61,14 @@ export function createToggleActions(onClose: () => void): CommandAction[] {
       icon: "\u23EF",
       keywords: ["tracking", "pause", "resume", "toggle", "stop", "start"],
       execute: async () => { await api.toggleTracking(); onClose(); },
+    },
+    {
+      id: "ai-reclassify",
+      label: "Reclassify Pending (AI)",
+      description: "Use Tier 2 model to reclassify pending events",
+      icon: "\u2728",
+      keywords: ["reclassify", "ai", "batch", "pending", "tier2", "ollama"],
+      execute: async () => { await api.triggerBatchReclassify(); onClose(); },
     },
   ];
 }

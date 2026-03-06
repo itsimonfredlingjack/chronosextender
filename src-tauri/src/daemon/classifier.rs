@@ -67,6 +67,7 @@ pub async fn classify_event(
     window_title: &str,
     bundle_id: &str,
     browser_url: Option<&str>,
+    duration_seconds: i64,
 ) {
     // Step 1: Try rules first
     if let Ok(rules) = state.db.get_rules_ordered() {
@@ -81,7 +82,7 @@ pub async fn classify_event(
     }
 
     // Step 2: Try Ollama LLM
-    match classify_with_ollama(state, app_name, window_title, bundle_id, browser_url).await {
+    match classify_with_ollama(state, app_name, window_title, bundle_id, browser_url, duration_seconds).await {
         Ok(result) => {
             let config = state.config.lock().await;
             let source = if result.confidence >= config.ai.min_confidence_threshold {
@@ -156,6 +157,7 @@ async fn classify_with_ollama(
     window_title: &str,
     bundle_id: &str,
     browser_url: Option<&str>,
+    duration_seconds: i64,
 ) -> Result<ClassificationResult, Box<dyn std::error::Error + Send + Sync>> {
     let config = state.config.lock().await;
     let ollama_url = config.ai.ollama_url.clone();
@@ -163,10 +165,27 @@ async fn classify_with_ollama(
     let timeout_ms = config.ai.classify_timeout_ms;
     drop(config);
 
+    classify_with_ollama_model(
+        &ollama_url, &model, timeout_ms,
+        app_name, window_title, bundle_id, browser_url, duration_seconds,
+    ).await
+}
+
+async fn classify_with_ollama_model(
+    ollama_url: &str,
+    model: &str,
+    timeout_ms: u64,
+    app_name: &str,
+    window_title: &str,
+    bundle_id: &str,
+    browser_url: Option<&str>,
+    duration_seconds: i64,
+) -> Result<ClassificationResult, Box<dyn std::error::Error + Send + Sync>> {
     let mut user_input = serde_json::json!({
         "app": app_name,
         "title": window_title,
         "bundle_id": bundle_id,
+        "duration_so_far_seconds": duration_seconds,
     });
 
     if let Some(url) = browser_url {
@@ -174,7 +193,7 @@ async fn classify_with_ollama(
     }
 
     let request = OllamaRequest {
-        model,
+        model: model.to_string(),
         messages: vec![
             OllamaMessage {
                 role: "system".to_string(),
@@ -266,4 +285,215 @@ fn extract_json_bool(content: &str, key: &str) -> Option<bool> {
         .as_str()
         .parse()
         .ok()
+}
+
+// --- Model lifecycle management ---
+
+async fn set_model_keep_alive(
+    ollama_url: &str,
+    model: &str,
+    keep_alive: &str,
+) {
+    let client = reqwest::Client::new();
+    let _ = client
+        .post(format!("{}/api/generate", ollama_url))
+        .json(&serde_json::json!({
+            "model": model,
+            "keep_alive": keep_alive,
+        }))
+        .send()
+        .await;
+}
+
+async fn unload_model(ollama_url: &str, model: &str) {
+    log::info!("Unloading model: {}", model);
+    set_model_keep_alive(ollama_url, model, "0").await;
+}
+
+async fn load_model_permanent(ollama_url: &str, model: &str) {
+    log::info!("Loading model (permanent): {}", model);
+    set_model_keep_alive(ollama_url, model, "-1").await;
+}
+
+async fn load_model_temp(ollama_url: &str, model: &str) {
+    log::info!("Loading model (10m): {}", model);
+    set_model_keep_alive(ollama_url, model, "10m").await;
+}
+
+// --- Tier 2: Batch reclassification ---
+
+pub async fn batch_reclassify(state: &Arc<DaemonState>) -> Result<usize, String> {
+    let config = state.config.lock().await;
+    let ollama_url = config.ai.ollama_url.clone();
+    let tier1 = config.ai.tier1_model.clone();
+    let tier2 = config.ai.tier2_model.clone();
+    let timeout = config.ai.classify_timeout_ms;
+    drop(config);
+
+    let pending = state.db.get_pending_events().map_err(|e| e.to_string())?;
+    if pending.is_empty() {
+        return Ok(0);
+    }
+
+    log::info!("Tier 2 batch: {} pending events to reclassify", pending.len());
+
+    // Model swap: unload Tier 1, load Tier 2
+    unload_model(&ollama_url, &tier1).await;
+    load_model_temp(&ollama_url, &tier2).await;
+
+    let mut reclassified = 0;
+
+    for event in &pending {
+        match classify_with_ollama_model(
+            &ollama_url,
+            &tier2,
+            timeout,
+            &event.app_name,
+            event.window_title.as_deref().unwrap_or(""),
+            &event.app_bundle_id,
+            event.browser_url.as_deref(),
+            event.duration_seconds,
+        )
+        .await
+        {
+            Ok(result) => {
+                let source = if result.confidence >= 0.5 {
+                    "llm"
+                } else {
+                    "pending"
+                };
+                if state
+                    .db
+                    .update_event_classification(event.id, &result, source)
+                    .is_ok()
+                {
+                    reclassified += 1;
+                }
+            }
+            Err(e) => {
+                log::warn!("Tier 2 reclassify failed for event {}: {}", event.id, e);
+            }
+        }
+    }
+
+    // Model swap back: unload Tier 2, reload Tier 1
+    unload_model(&ollama_url, &tier2).await;
+    load_model_permanent(&ollama_url, &tier1).await;
+
+    log::info!("Tier 2 batch complete: {}/{} reclassified", reclassified, pending.len());
+    Ok(reclassified)
+}
+
+// --- Tier 2: Daily summary ---
+
+const SUMMARY_PROMPT: &str = r#"You are a productivity summarizer. Given a day's tracked work events, generate a concise summary.
+Return ONLY JSON:
+{
+  "total_hours": <float>,
+  "top_category": "<category>",
+  "top_project": "<project or 'Various'>",
+  "summary": "<1-2 sentence summary of the day>",
+  "productivity_score": <1-10>
+}"#;
+
+pub async fn generate_daily_summary(
+    state: &Arc<DaemonState>,
+    date: &str,
+) -> Result<String, String> {
+    let config = state.config.lock().await;
+    let ollama_url = config.ai.ollama_url.clone();
+    let tier1 = config.ai.tier1_model.clone();
+    let tier2 = config.ai.tier2_model.clone();
+    let timeout = config.ai.classify_timeout_ms;
+    drop(config);
+
+    let events = state.db.get_events_for_date(date).map_err(|e| e.to_string())?;
+    if events.is_empty() {
+        return Err("No events for this date".to_string());
+    }
+
+    // Build aggregated input for the summary model
+    let total_seconds: i64 = events.iter().map(|e| e.duration_seconds).sum();
+    let total_hours = total_seconds as f64 / 3600.0;
+
+    let mut category_map: std::collections::HashMap<String, f64> =
+        std::collections::HashMap::new();
+    let mut project_map: std::collections::HashMap<String, f64> =
+        std::collections::HashMap::new();
+    let mut app_map: std::collections::HashMap<String, f64> =
+        std::collections::HashMap::new();
+
+    for event in &events {
+        let hours = event.duration_seconds as f64 / 3600.0;
+        let cat = event.category.clone().unwrap_or_else(|| "unknown".to_string());
+        let proj = event.project.clone().unwrap_or_else(|| "Unclassified".to_string());
+        *category_map.entry(cat).or_default() += hours;
+        *project_map.entry(proj).or_default() += hours;
+        *app_map.entry(event.app_name.clone()).or_default() += hours;
+    }
+
+    let summary_input = serde_json::json!({
+        "date": date,
+        "total_hours": format!("{:.1}", total_hours),
+        "event_count": events.len(),
+        "categories": category_map,
+        "projects": project_map,
+        "top_apps": app_map,
+    });
+
+    // Model swap
+    unload_model(&ollama_url, &tier1).await;
+    load_model_temp(&ollama_url, &tier2).await;
+
+    let request = OllamaRequest {
+        model: tier2.clone(),
+        messages: vec![
+            OllamaMessage {
+                role: "system".to_string(),
+                content: SUMMARY_PROMPT.to_string(),
+            },
+            OllamaMessage {
+                role: "user".to_string(),
+                content: serde_json::to_string(&summary_input).unwrap_or_default(),
+            },
+        ],
+        stream: false,
+        format: "json".to_string(),
+        think: false,
+        options: OllamaOptions {
+            temperature: 0.3,
+            num_predict: 300,
+        },
+    };
+
+    let client = reqwest::Client::new();
+    let result = tokio::time::timeout(
+        Duration::from_millis(timeout * 3), // longer timeout for summary
+        client
+            .post(format!("{}/api/chat", ollama_url))
+            .json(&request)
+            .send(),
+    )
+    .await
+    .map_err(|_| "Summary generation timed out".to_string())?
+    .map_err(|e| e.to_string())?;
+
+    let ollama_response: OllamaResponse = result.json().await.map_err(|e| e.to_string())?;
+    let content = ollama_response
+        .message
+        .ok_or("No message in summary response")?
+        .content;
+
+    // Store in summaries table
+    state
+        .db
+        .insert_summary("daily", date, date, &content)
+        .map_err(|e| e.to_string())?;
+
+    // Model swap back
+    unload_model(&ollama_url, &tier2).await;
+    load_model_permanent(&ollama_url, &tier1).await;
+
+    log::info!("Daily summary generated for {}", date);
+    Ok(content)
 }

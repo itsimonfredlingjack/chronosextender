@@ -267,3 +267,25 @@ pub async fn get_tracking_active(state: State<'_, Arc<DaemonState>>) -> Result<b
     let paused = state.tracking_paused.lock().await;
     Ok(!*paused)
 }
+
+#[tauri::command]
+pub async fn trigger_batch_reclassify(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<DaemonState>>,
+) -> Result<usize> {
+    let count = crate::daemon::classifier::batch_reclassify(&state)
+        .await
+        .map_err(|e| e.to_string())?;
+    app.emit("events-changed", ()).ok();
+    Ok(count)
+}
+
+#[tauri::command]
+pub async fn trigger_daily_summary(
+    state: State<'_, Arc<DaemonState>>,
+    date: String,
+) -> Result<String> {
+    crate::daemon::classifier::generate_daily_summary(&state, &date)
+        .await
+        .map_err(|e| e.to_string())
+}
