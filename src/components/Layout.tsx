@@ -1,14 +1,30 @@
 import { useState, useEffect, useCallback } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
+import { listen } from "@tauri-apps/api/event";
 import { useOllamaStatus } from "../hooks/useOllamaStatus";
+import { api } from "../lib/tauri";
 import CommandPalette from "./CommandPalette";
 
 export default function Layout() {
   const ollamaStatus = useOllamaStatus();
   const [cmdOpen, setCmdOpen] = useState(false);
   const closePalette = useCallback(() => setCmdOpen(false), []);
-  const location = useLocation();
-  const isHome = location.pathname === "/" || location.pathname === "/dashboard";
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const fetchPending = () => {
+      api.getPendingCount().then(setPendingCount).catch(() => {});
+    };
+    fetchPending();
+    const interval = setInterval(fetchPending, 10000);
+
+    const unlisten = listen("events-changed", fetchPending);
+
+    return () => {
+      clearInterval(interval);
+      unlisten.then((fn) => fn());
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -21,48 +37,60 @@ export default function Layout() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  return (
-    <div className="h-screen bg-[#0a0a14] overflow-hidden relative">
-      {/* Minimal top bar — only on sub-pages */}
-      {!isHome && (
-        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4">
-          <NavLink
-            to="/"
-            className="text-sm text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-2"
-          >
-            <span className="text-xs">{"\u2190"}</span>
-            <span>Back</span>
-          </NavLink>
-        </div>
-      )}
+  const tabs = [
+    { to: "/", label: "Pulse", icon: "\u25C9", end: true },
+    { to: "/review", label: "Review", icon: "\u2630", badge: pendingCount },
+    { to: "/reports", label: "Reports", icon: "\u25A4" },
+    { to: "/settings", label: "Settings", icon: "\u2699" },
+  ];
 
-      {/* Full-bleed content */}
-      <main className="h-full">
+  return (
+    <div className="h-screen bg-[#0a0a14] overflow-hidden relative flex flex-col">
+      {/* Content */}
+      <main className="flex-1 overflow-hidden">
         <Outlet />
       </main>
 
-      {/* Floating indicators */}
-      <div className="fixed bottom-5 right-5 z-30 flex items-center gap-3">
-        {/* Ollama status dot */}
-        <div className="flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity">
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${
-              ollamaStatus.connected ? "bg-emerald-400" : "bg-red-400"
-            }`}
-          />
-          <span className="text-[10px] text-gray-500 hidden hover:inline">
-            {ollamaStatus.connected ? "AI" : "Offline"}
-          </span>
-        </div>
+      {/* Bottom tab bar */}
+      <nav className="h-12 bg-[#0e0e1a] border-t border-[#2a2a40]/50 flex items-center px-2 shrink-0">
+        {tabs.map((tab) => (
+          <NavLink
+            key={tab.to}
+            to={tab.to}
+            end={tab.end}
+            className={({ isActive }) =>
+              `flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors relative ${
+                isActive ? "text-indigo-400" : "text-gray-500 hover:text-gray-400"
+              }`
+            }
+          >
+            <span className="text-sm">{tab.icon}</span>
+            <span>{tab.label}</span>
+            {tab.badge != null && tab.badge > 0 && (
+              <span className="absolute top-1 ml-12 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold">
+                {tab.badge > 99 ? "99+" : tab.badge}
+              </span>
+            )}
+          </NavLink>
+        ))}
 
-        {/* Command palette trigger */}
+        {/* Cmd+K trigger */}
         <button
           onClick={() => setCmdOpen(true)}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-500 bg-white/[0.04] border border-white/[0.06] rounded-lg hover:bg-white/[0.08] hover:text-gray-300 transition-all backdrop-blur-sm"
+          className="flex items-center gap-1 px-2 py-1.5 text-[10px] text-gray-600 hover:text-gray-400 transition-colors"
         >
           <span>{"\u2318"}K</span>
         </button>
-      </div>
+
+        {/* Ollama dot */}
+        <div className="px-1.5">
+          <span
+            className={`block w-1.5 h-1.5 rounded-full ${
+              ollamaStatus.connected ? "bg-emerald-400" : "bg-red-400"
+            }`}
+          />
+        </div>
+      </nav>
 
       <CommandPalette isOpen={cmdOpen} onClose={closePalette} />
     </div>

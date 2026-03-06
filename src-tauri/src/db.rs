@@ -234,6 +234,39 @@ impl Database {
         Ok(events)
     }
 
+    pub fn get_events_for_date_range(&self, start: &str, end: &str) -> Result<Vec<Event>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, start_time, end_time, app_bundle_id, app_name, window_title,
+                    browser_url, duration_seconds, category, project, task_description,
+                    confidence, classification_source, created_at
+             FROM events
+             WHERE date(start_time) >= ?1 AND date(start_time) <= ?2
+             ORDER BY start_time ASC",
+        )?;
+        let events = stmt
+            .query_map(params![start, end], |row| {
+                Ok(Event {
+                    id: row.get(0)?,
+                    start_time: row.get(1)?,
+                    end_time: row.get(2)?,
+                    app_bundle_id: row.get(3)?,
+                    app_name: row.get(4)?,
+                    window_title: row.get(5)?,
+                    browser_url: row.get(6)?,
+                    duration_seconds: row.get(7)?,
+                    category: row.get(8)?,
+                    project: row.get(9)?,
+                    task_description: row.get(10)?,
+                    confidence: row.get(11)?,
+                    classification_source: row.get(12)?,
+                    created_at: row.get(13)?,
+                })
+            })?
+            .collect::<Result<Vec<_>>>()?;
+        Ok(events)
+    }
+
     pub fn get_pending_events(&self) -> Result<Vec<Event>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(

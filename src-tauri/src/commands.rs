@@ -131,18 +131,26 @@ pub async fn get_project_summary(
     start: String,
     end: String,
 ) -> Result<ProjectSummary> {
-    // Get all events in range and aggregate by project
-    let events_start = state
+    let events = state
         .db
-        .get_events_for_date(&start)
+        .get_events_for_date_range(&start, &end)
         .map_err(|e| e.to_string())?;
 
-    // For a simple implementation, aggregate the events we have
+    // Load projects for billable/rate info
+    let db_projects = state
+        .db
+        .get_all_projects()
+        .map_err(|e| e.to_string())?;
+    let project_info: std::collections::HashMap<String, &Project> = db_projects
+        .iter()
+        .map(|p| (p.name.clone(), p))
+        .collect();
+
     let mut project_map: std::collections::HashMap<String, (f64, Vec<(String, f64)>)> =
         std::collections::HashMap::new();
     let mut total_hours = 0.0;
 
-    for event in &events_start {
+    for event in &events {
         let hours = event.duration_seconds as f64 / 3600.0;
         total_hours += hours;
         let project_name = event
@@ -161,6 +169,8 @@ pub async fn get_project_summary(
         entry.1.push((category, hours));
     }
 
+    let mut billable_hours = 0.0;
+
     let projects = project_map
         .into_iter()
         .map(|(name, (hours, cats))| {
@@ -169,10 +179,20 @@ pub async fn get_project_summary(
             for (cat, h) in cats {
                 *cat_map.entry(cat).or_default() += h;
             }
+
+            let is_billable = project_info
+                .get(&name)
+                .map(|p| p.is_billable)
+                .unwrap_or(false);
+
+            if is_billable {
+                billable_hours += hours;
+            }
+
             ProjectTimeEntry {
                 project: name,
                 hours,
-                billable: true,
+                billable: is_billable,
                 category_breakdown: cat_map
                     .into_iter()
                     .map(|(category, hours)| CategoryTime { category, hours })
@@ -184,7 +204,7 @@ pub async fn get_project_summary(
     Ok(ProjectSummary {
         projects,
         total_hours,
-        billable_hours: total_hours, // simplified for now
+        billable_hours,
     })
 }
 

@@ -1,58 +1,28 @@
-import { useState, useEffect } from "react";
-import { api } from "../lib/tauri";
-import type { Event, Category } from "../lib/types";
-import { CATEGORY_LABELS } from "../lib/types";
-
-const categories: Category[] = [
-  "coding", "communication", "design", "documentation",
-  "browsing", "meeting", "admin", "entertainment", "unknown",
-];
+import { useState, useEffect, useCallback } from "react";
+import { listen } from "@tauri-apps/api/event";
+import { useEvents } from "../hooks/useEvents";
+import { aggregateToWorkBlocks } from "../lib/workblocks";
+import WorkBlockCard from "../components/WorkBlockCard";
 
 export default function ReviewQueue() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadEvents = async () => {
-    try {
-      const data = await api.getPendingEvents();
-      setEvents(data);
-    } catch (e) {
-      console.error("Failed to load pending events:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { events, loading, refresh } = useEvents();
+  const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    loadEvents();
+    const unlisten = listen("events-changed", () => {
+      refresh();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [refresh]);
+
+  const blocks = aggregateToWorkBlocks(events);
+  const pendingBlocks = blocks.filter((b) => !approvedIds.has(b.id));
+
+  const handleApproved = useCallback((blockId: string) => {
+    setApprovedIds((prev) => new Set(prev).add(blockId));
   }, []);
-
-  const handleClassify = async (
-    eventId: number,
-    category: string,
-    project: string | null
-  ) => {
-    try {
-      await api.reclassifyEvent(eventId, project, category, null);
-      setEvents((prev) => prev.filter((e) => e.id !== eventId));
-    } catch (e) {
-      console.error("Failed to reclassify:", e);
-    }
-  };
-
-  const handleCreateRule = async (event: Event, category: string) => {
-    try {
-      await api.addRule({
-        priority: 100,
-        match_type: "app_name",
-        match_value: event.app_name,
-        target_category: category,
-        target_project_id: null,
-      });
-    } catch (e) {
-      console.error("Failed to create rule:", e);
-    }
-  };
 
   if (loading) {
     return (
@@ -63,111 +33,39 @@ export default function ReviewQueue() {
   }
 
   return (
-    <div className="p-6 space-y-6 overflow-auto h-full">
+    <div className="p-5 space-y-4 overflow-auto h-full">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Review Queue</h2>
-          <p className="text-sm text-gray-400">
-            {events.length} events need classification
+          <h2 className="text-lg font-bold text-white">Review</h2>
+          <p className="text-xs text-gray-500">
+            {pendingBlocks.length === 0
+              ? "All blocks confirmed"
+              : `${pendingBlocks.length} work block${pendingBlocks.length !== 1 ? "s" : ""} to review`}
           </p>
         </div>
-        <button onClick={loadEvents} className="btn-ghost text-sm">
-          Refresh
-        </button>
       </div>
 
-      {events.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
-          All events are classified. Nice work!
+      {pendingBlocks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
+            <span className="text-lg text-emerald-400">{"\u2713"}</span>
+          </div>
+          <p className="text-sm text-gray-400">All clear</p>
+          <p className="text-xs text-gray-600 mt-1">
+            Work blocks will appear here as you use your computer
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {events.map((event) => (
-            <ReviewItem
-              key={event.id}
-              event={event}
-              onClassify={handleClassify}
-              onCreateRule={handleCreateRule}
+          {pendingBlocks.map((block) => (
+            <WorkBlockCard
+              key={block.id}
+              block={block}
+              onApproved={handleApproved}
             />
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function ReviewItem({
-  event,
-  onClassify,
-  onCreateRule,
-}: {
-  event: Event;
-  onClassify: (id: number, category: string, project: string | null) => void;
-  onCreateRule: (event: Event, category: string) => void;
-}) {
-  const [selectedCategory, setSelectedCategory] = useState<string>(
-    event.category || "unknown"
-  );
-  const [project, setProject] = useState(event.project || "");
-
-  return (
-    <div className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40]">
-      <div className="flex items-start gap-4">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white">{event.app_name}</p>
-          {event.window_title && (
-            <p className="text-xs text-gray-400 truncate">{event.window_title}</p>
-          )}
-          <p className="text-xs text-gray-500 mt-1">
-            {new Date(event.start_time).toLocaleTimeString()} -{" "}
-            {Math.round(event.duration_seconds / 60)}m
-            {event.confidence > 0 && (
-              <span className="ml-2">
-                ({Math.round(event.confidence * 100)}% confidence)
-              </span>
-            )}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="text-xs px-2 py-1.5 border border-[#2a2a40] rounded-lg bg-[#12121e] text-white"
-          >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {CATEGORY_LABELS[cat]}
-              </option>
-            ))}
-          </select>
-
-          <input
-            value={project}
-            onChange={(e) => setProject(e.target.value)}
-            placeholder="Project"
-            className="text-xs px-2 py-1.5 w-24 border border-[#2a2a40] rounded-lg bg-[#12121e] text-white"
-          />
-
-          <button
-            onClick={() => onClassify(event.id, selectedCategory, project || null)}
-            className="btn-primary text-xs"
-          >
-            Save
-          </button>
-
-          <button
-            onClick={() => {
-              onClassify(event.id, selectedCategory, project || null);
-              onCreateRule(event, selectedCategory);
-            }}
-            className="btn-ghost text-xs"
-            title="Save and create a rule for this app"
-          >
-            + Rule
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
