@@ -72,7 +72,7 @@ export default function WorkBlockCard({ block, onApproved }: Props) {
 
   return (
     <div
-      className="bg-[#1a1a2e] rounded-xl p-5 border border-[#2a2a40] border-l-4 card-elevated transition-all"
+      className="bg-[#1a1a2e] rounded-xl p-5 border border-[#2a2a40] border-l-4 card-elevated transition-all hover:-translate-y-0.5"
       style={{ borderLeftColor: color }}
     >
       <div className="flex items-start justify-between mb-2">
@@ -120,10 +120,11 @@ export default function WorkBlockCard({ block, onApproved }: Props) {
                   key={cat}
                   onClick={() => handleEditCategory(cat)}
                   title={CATEGORY_LABELS[cat]}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium text-white transition-all hover:scale-110 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 focus-visible:ring-offset-[#1a1a2e]"
+                  className="px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-medium text-white transition-all hover:scale-105 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 focus-visible:ring-offset-[#1a1a2e]"
                   style={{ backgroundColor: catColor }}
                 >
                   {CATEGORY_LABELS[cat].charAt(0)}
+                  <span className="text-white/70 text-[10px]">{CATEGORY_LABELS[cat]}</span>
                 </button>
               );
             })}

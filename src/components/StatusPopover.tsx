@@ -14,8 +14,8 @@ interface Props {
 function PauseIcon() {
   return (
     <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
-      <rect x="1.5" y="1" width="3.5" height="10" rx="1"/>
-      <rect x="7" y="1" width="3.5" height="10" rx="1"/>
+      <rect x="1.5" y="1" width="3.5" height="10" rx="1" />
+      <rect x="7" y="1" width="3.5" height="10" rx="1" />
     </svg>
   );
 }
@@ -23,7 +23,7 @@ function PauseIcon() {
 function PlayIcon() {
   return (
     <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
-      <path d="M2.5 1.5L10.5 6L2.5 10.5V1.5Z"/>
+      <path d="M2.5 1.5L10.5 6L2.5 10.5V1.5Z" />
     </svg>
   );
 }
@@ -44,14 +44,8 @@ export default function StatusPopover({
   const health: "red" | "amber" | "green" = !ollamaConnected
     ? "red"
     : !trackingActive || pendingCount > 0
-    ? "amber"
-    : "green";
-
-  const pillColors = {
-    green: "bg-emerald-500/15 text-emerald-400",
-    amber: "bg-amber-500/15 text-amber-400",
-    red: "bg-red-500/15 text-red-400",
-  };
+      ? "amber"
+      : "green";
 
   const dotColors = {
     green: "bg-emerald-400",
@@ -63,10 +57,10 @@ export default function StatusPopover({
     health === "red"
       ? "Offline"
       : pendingCount > 0
-      ? `${pendingCount} pending`
-      : !trackingActive
-      ? "Paused"
-      : "All good";
+        ? `${pendingCount} pending`
+        : !trackingActive
+          ? "Paused"
+          : "All good";
 
   // Close on outside click
   useEffect(() => {
@@ -92,18 +86,24 @@ export default function StatusPopover({
 
   return (
     <div ref={ref} className="relative">
-      {/* Health pill button */}
+      {/* Health indicator button — compact for sidebar */}
       <button
         onClick={() => (isOpen ? onClose() : onOpen())}
-        className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium transition-colors ${pillColors[health]}`}
+        className="sidebar-link relative"
+        title={pillLabel}
       >
-        <span className={`w-1.5 h-1.5 rounded-full ${dotColors[health]}`} />
-        {pillLabel}
+        <span className={`w-2 h-2 rounded-full ${dotColors[health]}`} />
+        {pendingCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-[9px] font-bold text-black flex items-center justify-center">
+            {pendingCount}
+          </span>
+        )}
+        <span className="sidebar-tooltip">{pillLabel}</span>
       </button>
 
       {/* Popover */}
       {isOpen && (
-        <div className="absolute bottom-8 right-0 w-52 bg-[#1a1a2e] border border-[#2a2a40] rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="absolute left-12 bottom-0 w-52 bg-[#1a1a2e] border border-[#2a2a40] rounded-xl shadow-2xl overflow-hidden z-50">
           {/* Ollama row */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-[#2a2a40]/50">
             <span className={`w-2 h-2 rounded-full shrink-0 ${ollamaConnected ? "bg-emerald-400" : "bg-red-400"}`} />

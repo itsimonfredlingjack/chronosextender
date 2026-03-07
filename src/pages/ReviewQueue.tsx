@@ -43,7 +43,7 @@ export default function ReviewQueue() {
 
   if (loading) {
     return (
-      <div className="p-5 space-y-4">
+      <div className="p-6 space-y-4">
         <div className="h-6 w-32 bg-[#1a1a2e] rounded animate-pulse" />
         {[1, 2, 3].map((i) => (
           <div key={i} className="bg-[#1a1a2e] rounded-xl p-5 border border-[#2a2a40] space-y-3 animate-pulse">
@@ -57,11 +57,11 @@ export default function ReviewQueue() {
   }
 
   return (
-    <div className="p-5 space-y-4 overflow-auto h-full">
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-4 overflow-auto h-full">
+      <div className="flex items-center justify-between animate-slide-up">
         <div>
-          <h2 className="text-lg font-bold text-white">Review</h2>
-          <p className="text-xs text-gray-500">
+          <h2 className="text-xl font-semibold text-white">Review</h2>
+          <p className="text-xs text-gray-400 mt-0.5">
             {pendingBlocks.length === 0
               ? "All blocks confirmed"
               : `${pendingBlocks.length} work block${pendingBlocks.length !== 1 ? "s" : ""} to review`}
@@ -78,29 +78,44 @@ export default function ReviewQueue() {
               AI processing...
             </>
           ) : (
-            "Reclassify (AI)"
+            <>
+              <span className="text-indigo-400">✦</span>
+              Reclassify
+            </>
           )}
         </button>
       </div>
 
       {pendingBlocks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
-            <span className="text-lg text-emerald-400">{"\u2713"}</span>
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          {/* Animated success state */}
+          <div className="relative w-16 h-16 mb-4">
+            <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ring-pulse" />
+            <div className="absolute inset-2 rounded-full bg-emerald-500/5 animate-ring-pulse" style={{ animationDelay: "1s" }} />
+            <div className="absolute inset-0 rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-emerald-400">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+            </div>
           </div>
-          <p className="text-sm text-gray-400">All clear</p>
-          <p className="text-xs text-gray-600 mt-1">
-            Work blocks will appear here as you use your computer
+          <p className="text-base font-medium text-gray-300">All clear</p>
+          <p className="text-xs text-gray-500 mt-1.5 max-w-xs">
+            Work blocks will appear here as you use your computer. Chronos groups related activity for easy review.
           </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {pendingBlocks.map((block) => (
-            <WorkBlockCard
+          {pendingBlocks.map((block, i) => (
+            <div
               key={block.id}
-              block={block}
-              onApproved={handleApproved}
-            />
+              className="animate-slide-up"
+              style={{ animationDelay: `${i * 50}ms` }}
+            >
+              <WorkBlockCard
+                block={block}
+                onApproved={handleApproved}
+              />
+            </div>
           ))}
         </div>
       )}

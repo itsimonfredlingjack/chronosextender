@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
 import { useOllamaStatus } from "../hooks/useOllamaStatus";
 import { api } from "../lib/tauri";
@@ -16,10 +16,11 @@ export default function Layout() {
   const [pendingCount, setPendingCount] = useState(0);
   const [statusOpen, setStatusOpen] = useState(false);
   const [trackingActive, setTrackingActive] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
     const fetchPending = () => {
-      api.getPendingCount().then(setPendingCount).catch(() => {});
+      api.getPendingCount().then(setPendingCount).catch(() => { });
     };
     fetchPending();
     const interval = setInterval(fetchPending, 10000);
@@ -55,7 +56,7 @@ export default function Layout() {
     const fetchTracking = async () => {
       try {
         setTrackingActive(await api.getTrackingActive());
-      } catch {}
+      } catch { }
     };
     fetchTracking();
     const interval = setInterval(fetchTracking, 5000);
@@ -70,44 +71,57 @@ export default function Layout() {
   const closeStatus = useCallback(() => setStatusOpen(false), []);
 
   const tabs = [
-    { to: "/", label: "Pulse", icon: "\u25C9", end: true },
-    { to: "/review", label: "Review", icon: "\u2630" },
-    { to: "/reports", label: "Reports", icon: "\u25A4" },
-    { to: "/settings", label: "Settings", icon: "\u2699" },
+    { to: "/", label: "Pulse", icon: "◉", end: true },
+    { to: "/review", label: "Review", icon: "☰" },
+    { to: "/reports", label: "Reports", icon: "▤" },
+    { to: "/settings", label: "Settings", icon: "⚙" },
   ];
 
   return (
-    <div className="h-screen bg-[#0a0a14] overflow-hidden relative flex flex-col">
-      {/* Content */}
-      <main className="flex-1 overflow-hidden">
-        <Outlet />
-      </main>
+    <div className="h-screen bg-base overflow-hidden relative flex">
+      {/* Mesh gradient background */}
+      <div className="mesh-bg" />
 
-      {/* Bottom tab bar */}
-      <nav className="h-12 bg-[#0e0e1a] border-t border-[#2a2a40]/50 flex items-center px-2 shrink-0">
-        {tabs.map((tab) => (
-          <NavLink
-            key={tab.to}
-            to={tab.to}
-            end={tab.end}
-            className={({ isActive }) =>
-              `flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors relative ${
-                isActive ? "text-indigo-400" : "text-gray-500 hover:text-gray-400"
-              }`
-            }
-          >
-            <span className="text-sm">{tab.icon}</span>
-            <span>{tab.label}</span>
-          </NavLink>
-        ))}
+      {/* Left sidebar — pt-8 clears macOS traffic lights */}
+      <aside data-tauri-drag-region className="relative z-10 w-14 flex flex-col items-center pt-8 pb-3 border-r border-border/50 bg-base/80 backdrop-blur-sm shrink-0">
+        {/* Logo */}
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center mb-4">
+          <span className="text-sm font-semibold text-indigo-400">C</span>
+        </div>
 
-        <div className="flex items-center gap-1 px-1">
+        {/* Nav links */}
+        <nav className="flex flex-col items-center gap-1.5 flex-1">
+          {tabs.map((tab) => {
+            const isActive =
+              tab.end
+                ? location.pathname === tab.to || location.pathname === "/dashboard"
+                : location.pathname.startsWith(tab.to);
+
+            return (
+              <NavLink
+                key={tab.to}
+                to={tab.to}
+                end={tab.end}
+                className={`sidebar-link ${isActive ? "active" : ""}`}
+              >
+                <span>{tab.icon}</span>
+                <span className="sidebar-tooltip">{tab.label}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* Bottom actions */}
+        <div className="flex flex-col items-center gap-2 mt-auto">
           <button
             onClick={() => { setCmdOpen(false); setAssistantOpen(true); }}
-            className="flex items-center gap-0.5 px-1.5 py-1 text-[10px] text-gray-600 hover:text-gray-300 transition-colors"
+            className="sidebar-link"
+            title="AI Assistant (⌘K)"
           >
-            <span>{"\u2318"}K</span>
+            <span className="text-sm">✦</span>
+            <span className="sidebar-tooltip">AI · ⌘K</span>
           </button>
+
           <StatusPopover
             ollamaConnected={ollamaStatus.connected}
             trackingActive={trackingActive}
@@ -118,7 +132,12 @@ export default function Layout() {
             onClose={closeStatus}
           />
         </div>
-      </nav>
+      </aside>
+
+      {/* Content — pt-7 clears the drag region */}
+      <main data-tauri-drag-region className="flex-1 overflow-hidden relative z-10 pt-7">
+        <Outlet />
+      </main>
 
       <CommandPalette isOpen={cmdOpen} onClose={closePalette} />
       <AIChatPanel isOpen={assistantOpen} onClose={closeAssistant} />

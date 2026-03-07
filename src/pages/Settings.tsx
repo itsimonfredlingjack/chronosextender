@@ -94,12 +94,12 @@ export default function Settings() {
       setSettings((prev) =>
         prev
           ? {
-              ...prev,
-              cloud: {
-                ...prev.cloud,
-                last_sync_at: nextStatus.last_sync_at,
-              },
-            }
+            ...prev,
+            cloud: {
+              ...prev.cloud,
+              last_sync_at: nextStatus.last_sync_at,
+            },
+          }
           : prev
       );
     } catch (e) {
@@ -170,8 +170,8 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-3xl overflow-auto h-full">
-      <h2 className="text-2xl font-bold text-white">Settings</h2>
+    <div className="p-6 space-y-5 max-w-3xl overflow-auto h-full">
+      <h2 className="text-xl font-semibold text-white animate-slide-up">Settings</h2>
 
       {/* Projects — always visible */}
       <Section title="Projects">
@@ -269,12 +269,19 @@ export default function Settings() {
           className="w-full flex items-center justify-between py-3 text-sm text-gray-500 hover:text-gray-300 transition-colors border-t border-[#2a2a40]"
         >
           <span className="font-medium">Advanced</span>
-          <span
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
             className="transition-transform duration-200"
             style={{ transform: showAdvanced ? "rotate(90deg)" : "rotate(0deg)" }}
           >
-            ›
-          </span>
+            <path d="M6 4l4 4-4 4" />
+          </svg>
         </button>
 
         {showAdvanced && (
@@ -283,9 +290,8 @@ export default function Settings() {
             <Section title="AI Status">
               <div className="flex items-center gap-3 mb-3">
                 <span
-                  className={`w-3 h-3 rounded-full ${
-                    ollamaStatus.connected ? "bg-green-500" : "bg-red-500"
-                  }`}
+                  className={`w-3 h-3 rounded-full ${ollamaStatus.connected ? "bg-green-500" : "bg-red-500"
+                    }`}
                 />
                 <span className="text-sm text-gray-300">
                   Ollama {ollamaStatus.connected ? "Connected" : "Disconnected"}
@@ -678,11 +684,10 @@ export default function Settings() {
                       </p>
                     </div>
                     <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] ${
-                        assistantSecretStatus?.configured
+                      className={`rounded-full px-2.5 py-1 text-[11px] ${assistantSecretStatus?.configured
                           ? "bg-emerald-500/10 text-emerald-300"
                           : "bg-amber-500/10 text-amber-300"
-                      }`}
+                        }`}
                     >
                       {assistantSecretStatus?.configured ? "Stored" : "Missing"}
                     </span>
@@ -744,8 +749,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-[#1a1a2e] rounded-lg p-5 border border-[#2a2a40]">
-      <h3 className="text-sm font-medium text-white mb-4">{title}</h3>
+    <div className="settings-section animate-slide-up">
+      <h3 className="text-sm font-medium text-white mb-4 pl-2">{title}</h3>
       {children}
     </div>
   );

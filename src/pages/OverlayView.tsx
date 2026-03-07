@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api } from "../lib/tauri";
 import { useOverlayData } from "../hooks/useOverlayData";
@@ -7,7 +7,11 @@ import OverlayProgressBar from "../components/overlay/OverlayProgressBar";
 import OverlayCommandBar from "../components/overlay/OverlayCommandBar";
 
 export default function OverlayView() {
-  const { currentSession, flowStatus, pendingCount, totalSeconds } = useOverlayData();
+  const { currentSession, flowStatus, pendingCount, totalSeconds, trackingActive: trackingFromHook } = useOverlayData();
+
+  // Local state for instant visual feedback on toggle (hook syncs every 3s)
+  const [trackingActive, setTrackingActive] = useState(trackingFromHook);
+  useEffect(() => { setTrackingActive(trackingFromHook); }, [trackingFromHook]);
 
   // Set transparent body for overlay window
   useEffect(() => {
@@ -31,12 +35,26 @@ export default function OverlayView() {
     };
   }, []);
 
+  const handleToggle = async () => {
+    const nowActive = await api.toggleTracking();
+    setTrackingActive(nowActive);
+  };
+
   return (
     <div className="overlay-animate-in p-2">
       <div className="overlay-shell">
-        <OverlayPulse currentSession={currentSession} flowStatus={flowStatus} />
+        <OverlayPulse
+          currentSession={currentSession}
+          flowStatus={flowStatus}
+          trackingActive={trackingActive}
+          onToggle={handleToggle}
+        />
         <OverlayProgressBar totalSeconds={totalSeconds} pendingCount={pendingCount} />
-        <OverlayCommandBar pendingCount={pendingCount} onDismiss={() => api.hideOverlay()} />
+        <OverlayCommandBar
+          pendingCount={pendingCount}
+          trackingActive={trackingActive}
+          onDismiss={() => api.hideOverlay()}
+        />
       </div>
     </div>
   );

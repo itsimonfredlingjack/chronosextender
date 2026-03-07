@@ -30,18 +30,13 @@ export default function CategoryRace({
               <span className="text-xs text-gray-500 truncate" title={ct.label}>
                 {ct.label}
               </span>
-              <div className="relative">
-                <div
-                  className="w-1.5 h-1.5 rounded-full"
-                  style={{ backgroundColor: color }}
-                />
-                {isActive && (
-                  <div
-                    className="absolute inset-0 rounded-full animate-ping opacity-40"
-                    style={{ backgroundColor: color }}
-                  />
-                )}
-              </div>
+              <div
+                className={`w-2 h-2 rounded-full shrink-0 ${isActive ? "ring-2 ring-offset-1 ring-offset-[#0a0a14]" : ""}`}
+                style={{
+                  backgroundColor: color,
+                  boxShadow: isActive ? `0 0 6px ${color}50` : undefined,
+                }}
+              />
             </div>
             <div className="flex-1 h-1.5 bg-white/[0.03] rounded-full overflow-hidden">
               <div

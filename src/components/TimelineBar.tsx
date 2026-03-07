@@ -85,13 +85,15 @@ export default function TimelineBar({ events }: TimelineBarProps) {
           return (
             <div
               key={`${session.start_time}-${i}`}
-              className="flex items-end"
-              style={{ marginLeft: gapPct > 1.5 ? `${gapPct}%` : undefined }}
+              className="flex items-end animate-slide-up"
+              style={{
+                marginLeft: gapPct > 1.5 ? `${gapPct}%` : undefined,
+                animationDelay: `${i * 30}ms`,
+              }}
             >
               <div
-                className={`rounded-sm cursor-pointer transition-all duration-300 hover:brightness-125 ${
-                  isActive ? "animate-waveform-pulse" : ""
-                }`}
+                className={`rounded cursor-pointer transition-all duration-300 hover:brightness-125 hover:scale-y-110 ${isActive ? "animate-waveform-pulse" : ""
+                  }`}
                 style={{
                   height: `${heightPct}%`,
                   width: `max(3px, ${widthPct}%)`,
@@ -99,6 +101,7 @@ export default function TimelineBar({ events }: TimelineBarProps) {
                   backgroundColor: color,
                   boxShadow: `0 0 8px ${color}40, 0 0 2px ${color}20`,
                   opacity: isActive ? 1 : 0.85,
+                  transformOrigin: "bottom",
                 }}
                 onMouseEnter={(e) =>
                   setTooltip({ session, x: e.clientX, y: e.clientY })
@@ -115,8 +118,15 @@ export default function TimelineBar({ events }: TimelineBarProps) {
         })}
       </div>
 
-      {/* Subtle baseline */}
+      {/* Baseline + hour labels */}
       <div className="h-px bg-white/[0.06] mt-1" />
+      <div className="flex justify-between mt-1.5">
+        {Array.from({ length: 10 }, (_, i) => (
+          <span key={i} className="text-[8px] text-gray-600 tabular-nums font-mono">
+            {(8 + i).toString().padStart(2, "0")}
+          </span>
+        ))}
+      </div>
 
       {/* Tooltip */}
       {tooltip && (
