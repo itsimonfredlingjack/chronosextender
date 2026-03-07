@@ -4,10 +4,11 @@ import { filterCommands, type CommandAction } from "../../lib/commands";
 
 interface Props {
   pendingCount: number;
+  trackingActive: boolean;
   onDismiss: () => void;
 }
 
-export default function OverlayCommandBar({ pendingCount, onDismiss }: Props) {
+export default function OverlayCommandBar({ pendingCount, trackingActive, onDismiss }: Props) {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -41,10 +42,10 @@ export default function OverlayCommandBar({ pendingCount, onDismiss }: Props) {
       },
       {
         id: "toggle-tracking",
-        label: "Toggle Tracking",
-        description: "Pause or resume",
-        icon: "\u23EF",
-        keywords: ["tracking", "pause", "resume", "toggle"],
+        label: trackingActive ? "Pause Tracking" : "Resume Tracking",
+        description: trackingActive ? "Stop recording time" : "Continue recording time",
+        icon: trackingActive ? "\u23F8" : "\u25B6",
+        keywords: ["tracking", "pause", "resume", "toggle", "stop", "start", "break"],
         execute: async () => {
           await api.toggleTracking();
           onDismiss();
@@ -63,7 +64,7 @@ export default function OverlayCommandBar({ pendingCount, onDismiss }: Props) {
     );
 
     return items;
-  }, [pendingCount, onDismiss]);
+  }, [pendingCount, trackingActive, onDismiss]);
 
   const filtered = useMemo(
     () => filterCommands(actions, query, 6),
@@ -114,7 +115,7 @@ export default function OverlayCommandBar({ pendingCount, onDismiss }: Props) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search or type a command..."
+          placeholder="pause, review, reclassify..."
           className="flex-1 py-1 bg-transparent text-sm text-white placeholder-gray-500 outline-none"
         />
         <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500 border border-white/10">

@@ -75,13 +75,15 @@ export default function Layout() {
               }`
             }
           >
-            <span className="text-sm">{tab.icon}</span>
+            <span className="relative">
+              <span className="text-sm">{tab.icon}</span>
+              {tab.badge != null && tab.badge > 0 && (
+                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold leading-none">
+                  {tab.badge > 99 ? "99+" : tab.badge}
+                </span>
+              )}
+            </span>
             <span>{tab.label}</span>
-            {tab.badge != null && tab.badge > 0 && (
-              <span className="absolute top-1 ml-12 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold">
-                {tab.badge > 99 ? "99+" : tab.badge}
-              </span>
-            )}
           </NavLink>
         ))}
 

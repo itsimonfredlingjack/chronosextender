@@ -193,6 +193,13 @@ body.overlay-window {
   background: #22223a;
 }
 
+/* Focus rings — covers ALL focusable elements */
+:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.7);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Waveform pulse */
 @keyframes waveform-pulse {
   0%, 100% { opacity: 1; }

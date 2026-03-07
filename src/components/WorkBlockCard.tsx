@@ -40,14 +40,11 @@ export default function WorkBlockCard({ block, onApproved }: Props) {
   const handleApprove = async () => {
     setApproving(true);
     try {
-      for (const event of block.events) {
-        await api.reclassifyEvent(
-          event.id,
-          block.project,
-          block.dominantCategory,
-          null
-        );
-      }
+      await Promise.all(
+        block.events.map((event) =>
+          api.reclassifyEvent(event.id, block.project, block.dominantCategory, null)
+        )
+      );
       onApproved(block.id);
     } catch (e) {
       console.error("Failed to approve block:", e);
@@ -59,9 +56,11 @@ export default function WorkBlockCard({ block, onApproved }: Props) {
   const handleEditCategory = async (newCategory: string) => {
     setApproving(true);
     try {
-      for (const event of block.events) {
-        await api.reclassifyEvent(event.id, block.project, newCategory, null);
-      }
+      await Promise.all(
+        block.events.map((event) =>
+          api.reclassifyEvent(event.id, block.project, newCategory, null)
+        )
+      );
       onApproved(block.id);
     } catch (e) {
       console.error("Failed to reclassify block:", e);

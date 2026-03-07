@@ -26,8 +26,8 @@ export default function CategoryRace({
 
         return (
           <div key={ct.category} className="flex items-center gap-3">
-            <div className="flex items-center gap-2 w-24 justify-end">
-              <span className="text-xs text-gray-500 truncate">
+            <div className="flex items-center gap-2 w-28 justify-end">
+              <span className="text-xs text-gray-500 truncate" title={ct.label}>
                 {ct.label}
               </span>
               <div className="relative">
