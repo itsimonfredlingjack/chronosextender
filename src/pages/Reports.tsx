@@ -175,28 +175,28 @@ export default function Reports() {
           {/* Summary row */}
           <div className="grid grid-cols-4 gap-3">
             <div className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40]">
-              <p className="text-xs text-gray-500 mb-1">Total</p>
-              <p className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+              <p className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent tabular-nums">
                 {formatHours(totalSeconds)}
               </p>
+              <p className="text-xs text-gray-500 mt-1">Total</p>
             </div>
             <div className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40]">
-              <p className="text-xs text-gray-500 mb-1">Billable</p>
-              <p className="text-xl font-bold text-emerald-400">
+              <p className="text-xl font-bold text-white tabular-nums">
                 {projectSummary
                   ? `${projectSummary.billable_hours.toFixed(1)}h`
                   : "\u2014"}
               </p>
+              <p className="text-xs text-gray-500 mt-1">Billable</p>
             </div>
             <div className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40]">
-              <p className="text-xs text-gray-500 mb-1">Events</p>
-              <p className="text-xl font-bold text-white">{events.length}</p>
+              <p className="text-xl font-bold text-white tabular-nums">{events.length}</p>
+              <p className="text-xs text-gray-500 mt-1">Events</p>
             </div>
             <div className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40]">
-              <p className="text-xs text-gray-500 mb-1">Coverage</p>
-              <p className="text-xl font-bold text-amber-400">
+              <p className="text-xl font-bold text-white tabular-nums">
                 {leakage.coveragePct.toFixed(0)}%
               </p>
+              <p className="text-xs text-gray-500 mt-1">Coverage</p>
             </div>
           </div>
 
@@ -218,7 +218,7 @@ export default function Reports() {
                         <span className="text-xs w-20 text-gray-400 truncate">
                           {CATEGORY_LABELS[category as Category] || category}
                         </span>
-                        <div className="flex-1 h-5 bg-[#12121e] rounded-full overflow-hidden">
+                        <div className="flex-1 h-2 bg-[#12121e] rounded-full overflow-hidden">
                           <div
                             className="h-full rounded-full transition-all"
                             style={{
@@ -303,8 +303,18 @@ export default function Reports() {
             {summary ? (
               <>
                 <p className="text-sm text-gray-300">{summary.summary}</p>
-                <div className="flex gap-4 mt-2 text-xs text-gray-500">
-                  <span>Score: {summary.productivity_score}/10</span>
+                <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                      summary.productivity_score >= 7
+                        ? "bg-emerald-500/10 text-emerald-400"
+                        : summary.productivity_score >= 5
+                        ? "bg-amber-500/10 text-amber-400"
+                        : "bg-red-500/10 text-red-400"
+                    }`}
+                  >
+                    {summary.productivity_score}/10
+                  </span>
                   <span>Top: {summary.top_category}</span>
                   {summary.top_project && summary.top_project !== "Various" && (
                     <span>Project: {summary.top_project}</span>
