@@ -5,6 +5,7 @@ import { useOllamaStatus } from "../hooks/useOllamaStatus";
 import { api } from "../lib/tauri";
 import CommandPalette from "./CommandPalette";
 import { AIChatPanel } from "./ai-chat/AIChatPanel";
+import StatusPopover from "./StatusPopover";
 
 export default function Layout() {
   const ollamaStatus = useOllamaStatus();
@@ -13,6 +14,8 @@ export default function Layout() {
   const closePalette = useCallback(() => setCmdOpen(false), []);
   const closeAssistant = useCallback(() => setAssistantOpen(false), []);
   const [pendingCount, setPendingCount] = useState(0);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [trackingActive, setTrackingActive] = useState(true);
 
   useEffect(() => {
     const fetchPending = () => {
@@ -48,9 +51,27 @@ export default function Layout() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    const fetchTracking = async () => {
+      try {
+        setTrackingActive(await api.getTrackingActive());
+      } catch {}
+    };
+    fetchTracking();
+    const interval = setInterval(fetchTracking, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleToggleTracking = async () => {
+    const nowActive = await api.toggleTracking();
+    setTrackingActive(nowActive);
+  };
+
+  const closeStatus = useCallback(() => setStatusOpen(false), []);
+
   const tabs = [
     { to: "/", label: "Pulse", icon: "\u25C9", end: true },
-    { to: "/review", label: "Review", icon: "\u2630", badge: pendingCount },
+    { to: "/review", label: "Review", icon: "\u2630" },
     { to: "/reports", label: "Reports", icon: "\u25A4" },
     { to: "/settings", label: "Settings", icon: "\u2699" },
   ];
@@ -75,45 +96,26 @@ export default function Layout() {
               }`
             }
           >
-            <span className="relative">
-              <span className="text-sm">{tab.icon}</span>
-              {tab.badge != null && tab.badge > 0 && (
-                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold leading-none">
-                  {tab.badge > 99 ? "99+" : tab.badge}
-                </span>
-              )}
-            </span>
+            <span className="text-sm">{tab.icon}</span>
             <span>{tab.label}</span>
           </NavLink>
         ))}
 
-        <button
-          onClick={() => {
-            setCmdOpen(false);
-            setAssistantOpen(true);
-          }}
-          className="flex items-center gap-1 px-2 py-1.5 text-[10px] text-gray-600 hover:text-gray-300 transition-colors"
-        >
-          <span>AI</span>
-          <span>{"\u2318"}K</span>
-        </button>
-
-        <button
-          onClick={() => {
-            setAssistantOpen(false);
-            setCmdOpen(true);
-          }}
-          className="flex items-center gap-1 px-2 py-1.5 text-[10px] text-gray-600 hover:text-gray-400 transition-colors"
-        >
-          <span>{"\u2318"}{"\u21E7"}K</span>
-        </button>
-
-        {/* Ollama dot */}
-        <div className="px-1.5">
-          <span
-            className={`block w-1.5 h-1.5 rounded-full ${
-              ollamaStatus.connected ? "bg-emerald-400" : "bg-red-400"
-            }`}
+        <div className="flex items-center gap-1 px-1">
+          <button
+            onClick={() => { setCmdOpen(false); setAssistantOpen(true); }}
+            className="flex items-center gap-0.5 px-1.5 py-1 text-[10px] text-gray-600 hover:text-gray-300 transition-colors"
+          >
+            <span>{"\u2318"}K</span>
+          </button>
+          <StatusPopover
+            ollamaConnected={ollamaStatus.connected}
+            trackingActive={trackingActive}
+            pendingCount={pendingCount}
+            onToggleTracking={handleToggleTracking}
+            isOpen={statusOpen}
+            onOpen={() => setStatusOpen(true)}
+            onClose={closeStatus}
           />
         </div>
       </nav>
