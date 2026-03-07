@@ -43,8 +43,15 @@ export default function ReviewQueue() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
-        Loading...
+      <div className="p-5 space-y-4">
+        <div className="h-6 w-32 bg-[#1a1a2e] rounded animate-pulse" />
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-[#1a1a2e] rounded-xl p-5 border border-[#2a2a40] space-y-3 animate-pulse">
+            <div className="h-4 w-48 bg-[#22223a] rounded" />
+            <div className="h-3 w-32 bg-[#22223a] rounded" />
+            <div className="h-2 w-full bg-[#22223a] rounded-full" />
+          </div>
+        ))}
       </div>
     );
   }

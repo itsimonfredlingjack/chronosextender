@@ -155,8 +155,15 @@ export default function Settings() {
 
   if (!settings) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
-        Loading...
+      <div className="p-6 space-y-6 max-w-3xl animate-pulse">
+        <div className="h-7 w-24 bg-[#1a1a2e] rounded" />
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-[#1a1a2e] rounded-lg p-5 border border-[#2a2a40] space-y-3">
+            <div className="h-4 w-28 bg-[#22223a] rounded" />
+            <div className="h-8 w-full bg-[#22223a] rounded" />
+            <div className="h-8 w-3/4 bg-[#22223a] rounded" />
+          </div>
+        ))}
       </div>
     );
   }

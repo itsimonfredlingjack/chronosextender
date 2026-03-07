@@ -106,8 +106,17 @@ export default function Reports() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
-        Loading...
+      <div className="p-5 space-y-4 animate-pulse">
+        <div className="h-6 w-24 bg-[#1a1a2e] rounded" />
+        <div className="grid grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40] space-y-2">
+              <div className="h-6 w-16 bg-[#22223a] rounded" />
+              <div className="h-3 w-10 bg-[#22223a] rounded" />
+            </div>
+          ))}
+        </div>
+        <div className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40] h-32" />
       </div>
     );
   }
