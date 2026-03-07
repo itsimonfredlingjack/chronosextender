@@ -256,7 +256,7 @@ export default function Reports() {
                       <span className="text-xs w-24 text-gray-300 truncate">
                         {proj.project}
                       </span>
-                      <div className="flex-1 h-5 bg-[#12121e] rounded-full overflow-hidden">
+                      <div className="flex-1 h-2 bg-[#12121e] rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full"
                           style={{
