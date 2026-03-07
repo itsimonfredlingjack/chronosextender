@@ -1,3 +1,4 @@
+mod assistant;
 mod commands;
 mod config;
 mod daemon;
@@ -102,6 +103,7 @@ pub fn run() {
         flow_status: Arc::new(Mutex::new(FlowStatus::default())),
         ollama_status: Arc::new(Mutex::new(OllamaStatus::default())),
         tracking_paused: Arc::new(Mutex::new(false)),
+        assistant_streams: Arc::new(Mutex::new(std::collections::HashMap::new())),
     });
 
     tauri::Builder::default()
@@ -129,6 +131,7 @@ pub fn run() {
             commands::get_rule_suggestions,
             commands::get_flow_status,
             commands::get_ollama_status,
+            commands::get_cloud_sync_status,
             commands::get_settings,
             commands::update_settings,
             commands::get_project_summary,
@@ -143,6 +146,13 @@ pub fn run() {
             commands::trigger_daily_summary,
             commands::log_time_nlp,
             commands::get_daily_summary,
+            commands::sync_cloud_now,
+            commands::get_assistant_context_snapshot,
+            commands::get_assistant_secret_status,
+            commands::set_assistant_api_key,
+            commands::clear_assistant_api_key,
+            commands::start_assistant_stream,
+            commands::cancel_assistant_stream,
         ])
         .on_window_event(|window, event| {
             // Close button hides main window to tray instead of quitting
@@ -157,14 +167,19 @@ pub fn run() {
             setup_tray(app)?;
 
             // Register Cmd+Shift+T global shortcut
-            let shortcut =
-                Shortcut::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::KeyT);
+            let shortcut = Shortcut::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::KeyT);
             app.global_shortcut().register(shortcut)?;
 
             let handle = app.handle().clone();
             let state = daemon_state.clone();
             tauri::async_runtime::spawn(async move {
                 daemon::start_daemon(handle, state).await;
+            });
+
+            let sync_state = daemon_state.clone();
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                let _ = daemon::cloud::sync_recent_aggregates(&sync_state, 7).await;
             });
 
             Ok(())

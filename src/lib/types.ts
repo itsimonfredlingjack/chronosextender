@@ -1,3 +1,9 @@
+import type {
+  AssistantContextSnapshot,
+  AssistantSecretStatus,
+  AssistantSettings,
+} from "../types/ai-types";
+
 export interface Event {
   id: number;
   start_time: string;
@@ -126,6 +132,30 @@ export interface Settings {
     show_in_tray: boolean;
     show_current_activity_in_tray: boolean;
   };
+  cloud: {
+    enabled: boolean;
+    base_url: string;
+    sync_token: string;
+    last_sync_at: string | null;
+  };
+  assistant: AssistantSettings;
+}
+
+export interface CloudSyncStatus {
+  enabled: boolean;
+  configured: boolean;
+  base_url: string;
+  device_id: string;
+  last_sync_at: string | null;
+}
+
+export interface CloudSyncReport {
+  synced_dates: string[];
+  uploaded_summaries: number;
+  uploaded_project_rollups: number;
+  uploaded_flow_sessions: number;
+  last_sync_at: string | null;
+  failures: string[];
 }
 
 export interface Session {
@@ -198,6 +228,8 @@ export interface CommandAction {
   execute: () => void | Promise<void>;
   keywords: string[];
 }
+
+export type { AssistantContextSnapshot, AssistantSecretStatus, AssistantSettings };
 
 export const CATEGORY_COLORS: Record<Category, string> = {
   coding: "#22c55e",

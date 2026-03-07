@@ -64,10 +64,7 @@ pub async fn upsert_project(
     state: State<'_, Arc<DaemonState>>,
     project: NewProject,
 ) -> Result<i64> {
-    state
-        .db
-        .upsert_project(&project)
-        .map_err(|e| e.to_string())
+    state.db.upsert_project(&project).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -90,10 +87,7 @@ pub async fn delete_rule(state: State<'_, Arc<DaemonState>>, id: i64) -> Result<
 pub async fn get_rule_suggestions(
     state: State<'_, Arc<DaemonState>>,
 ) -> Result<Vec<RuleSuggestion>> {
-    state
-        .db
-        .get_rule_suggestions()
-        .map_err(|e| e.to_string())
+    state.db.get_rule_suggestions().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -109,6 +103,12 @@ pub async fn get_ollama_status(state: State<'_, Arc<DaemonState>>) -> Result<Oll
 }
 
 #[tauri::command]
+pub async fn get_cloud_sync_status(state: State<'_, Arc<DaemonState>>) -> Result<CloudSyncStatus> {
+    let config = state.config.lock().await;
+    Ok(crate::daemon::cloud::cloud_sync_status(&config))
+}
+
+#[tauri::command]
 pub async fn get_settings(state: State<'_, Arc<DaemonState>>) -> Result<AppConfig> {
     let config = state.config.lock().await;
     Ok(config.clone())
@@ -116,12 +116,14 @@ pub async fn get_settings(state: State<'_, Arc<DaemonState>>) -> Result<AppConfi
 
 #[tauri::command]
 pub async fn update_settings(
+    app: tauri::AppHandle,
     state: State<'_, Arc<DaemonState>>,
     settings: AppConfig,
 ) -> Result<bool> {
     settings.save().map_err(|e| e.to_string())?;
     let mut config = state.config.lock().await;
     *config = settings;
+    app.emit("settings-updated", ()).ok();
     Ok(true)
 }
 
@@ -137,14 +139,9 @@ pub async fn get_project_summary(
         .map_err(|e| e.to_string())?;
 
     // Load projects for billable/rate info
-    let db_projects = state
-        .db
-        .get_all_projects()
-        .map_err(|e| e.to_string())?;
-    let project_info: std::collections::HashMap<String, &Project> = db_projects
-        .iter()
-        .map(|p| (p.name.clone(), p))
-        .collect();
+    let db_projects = state.db.get_all_projects().map_err(|e| e.to_string())?;
+    let project_info: std::collections::HashMap<String, &Project> =
+        db_projects.iter().map(|p| (p.name.clone(), p)).collect();
 
     let mut project_map: std::collections::HashMap<String, (f64, Vec<(String, f64)>)> =
         std::collections::HashMap::new();
@@ -277,6 +274,9 @@ pub async fn trigger_batch_reclassify(
         .await
         .map_err(|e| e.to_string())?;
     app.emit("events-changed", ()).ok();
+    if count > 0 {
+        let _ = crate::daemon::cloud::sync_recent_aggregates(&state.inner().clone(), 7).await;
+    }
     Ok(count)
 }
 
@@ -285,9 +285,12 @@ pub async fn trigger_daily_summary(
     state: State<'_, Arc<DaemonState>>,
     date: String,
 ) -> Result<String> {
-    crate::daemon::classifier::generate_daily_summary(&state, &date)
+    let summary = crate::daemon::classifier::generate_daily_summary(&state, &date)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    let _ =
+        crate::daemon::cloud::sync_dates(&state.inner().clone(), std::slice::from_ref(&date)).await;
+    Ok(summary)
 }
 
 #[tauri::command]
@@ -335,8 +338,60 @@ pub async fn get_daily_summary(
     state: State<'_, Arc<DaemonState>>,
     date: String,
 ) -> Result<Option<Summary>> {
-    state
-        .db
-        .get_daily_summary(&date)
+    state.db.get_daily_summary(&date).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn sync_cloud_now(state: State<'_, Arc<DaemonState>>) -> Result<CloudSyncReport> {
+    crate::daemon::cloud::sync_recent_aggregates(&state.inner().clone(), 7)
+        .await
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_assistant_context_snapshot(
+    state: State<'_, Arc<DaemonState>>,
+) -> Result<AssistantContextSnapshot> {
+    crate::assistant::build_context_snapshot(&state.inner().clone()).await
+}
+
+#[tauri::command]
+pub async fn get_assistant_secret_status(provider: String) -> Result<AssistantSecretStatus> {
+    crate::assistant::assistant_secret_status(&provider)
+}
+
+#[tauri::command]
+pub async fn set_assistant_api_key(
+    app: tauri::AppHandle,
+    provider: String,
+    api_key: String,
+) -> Result<bool> {
+    crate::assistant::set_assistant_api_key(&provider, &api_key)?;
+    app.emit("assistant-secret-status-changed", &provider).ok();
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn clear_assistant_api_key(app: tauri::AppHandle, provider: String) -> Result<bool> {
+    crate::assistant::clear_assistant_api_key(&provider)?;
+    app.emit("assistant-secret-status-changed", &provider).ok();
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn start_assistant_stream(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<DaemonState>>,
+    request: AssistantStreamRequest,
+) -> Result<bool> {
+    crate::assistant::start_stream(app, state.inner().clone(), request).await?;
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn cancel_assistant_stream(
+    state: State<'_, Arc<DaemonState>>,
+    request_id: String,
+) -> Result<bool> {
+    crate::assistant::cancel_stream(&state.inner().clone(), &request_id).await
 }

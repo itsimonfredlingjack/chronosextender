@@ -4,11 +4,14 @@ import { listen } from "@tauri-apps/api/event";
 import { useOllamaStatus } from "../hooks/useOllamaStatus";
 import { api } from "../lib/tauri";
 import CommandPalette from "./CommandPalette";
+import { AIChatPanel } from "./ai-chat/AIChatPanel";
 
 export default function Layout() {
   const ollamaStatus = useOllamaStatus();
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const closePalette = useCallback(() => setCmdOpen(false), []);
+  const closeAssistant = useCallback(() => setAssistantOpen(false), []);
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
@@ -28,9 +31,17 @@ export default function Layout() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k" && e.shiftKey) {
         e.preventDefault();
+        setAssistantOpen(false);
         setCmdOpen((prev) => !prev);
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCmdOpen(false);
+        setAssistantOpen((prev) => !prev);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -74,12 +85,25 @@ export default function Layout() {
           </NavLink>
         ))}
 
-        {/* Cmd+K trigger */}
         <button
-          onClick={() => setCmdOpen(true)}
+          onClick={() => {
+            setCmdOpen(false);
+            setAssistantOpen(true);
+          }}
+          className="flex items-center gap-1 px-2 py-1.5 text-[10px] text-gray-600 hover:text-gray-300 transition-colors"
+        >
+          <span>AI</span>
+          <span>{"\u2318"}K</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setAssistantOpen(false);
+            setCmdOpen(true);
+          }}
           className="flex items-center gap-1 px-2 py-1.5 text-[10px] text-gray-600 hover:text-gray-400 transition-colors"
         >
-          <span>{"\u2318"}K</span>
+          <span>{"\u2318"}{"\u21E7"}K</span>
         </button>
 
         {/* Ollama dot */}
@@ -93,6 +117,7 @@ export default function Layout() {
       </nav>
 
       <CommandPalette isOpen={cmdOpen} onClose={closePalette} />
+      <AIChatPanel isOpen={assistantOpen} onClose={closeAssistant} />
     </div>
   );
 }

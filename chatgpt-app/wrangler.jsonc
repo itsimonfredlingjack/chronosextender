@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chronos-chatgpt-app",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-03-06",
+  "routes": [
+    {
+      "pattern": "chronosgpt.fredlingautomation.dev",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": "./dist/widget",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "chronos-chatgpt-app",
+      "database_id": "48a524b6-afb5-4f45-bbdb-b56d49d9d92d"
+    }
+  ],
+  "vars": {
+    "CHRONOS_ACCOUNT_ID": "owner",
+    "CHRONOS_APP_ORIGIN": "https://chronosgpt.fredlingautomation.dev"
+  }
+}

@@ -1,9 +1,11 @@
 pub mod classifier;
+pub mod cloud;
 pub mod flow;
 pub mod health;
 pub mod tracker;
 pub mod websocket;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use tauri::AppHandle;
@@ -19,6 +21,7 @@ pub struct DaemonState {
     pub flow_status: Arc<Mutex<FlowStatus>>,
     pub ollama_status: Arc<Mutex<OllamaStatus>>,
     pub tracking_paused: Arc<Mutex<bool>>,
+    pub assistant_streams: Arc<Mutex<HashMap<String, tokio::task::JoinHandle<()>>>>,
 }
 
 pub async fn start_daemon(app_handle: AppHandle, state: Arc<DaemonState>) {

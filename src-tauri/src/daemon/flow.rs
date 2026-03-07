@@ -39,9 +39,11 @@ pub async fn on_window_change(
 
     if tracker.in_flow {
         // Check if new app is an interrupt app
-        let is_interrupt = config.flow_guard.interrupt_apps.iter().any(|app| {
-            app.eq_ignore_ascii_case(new_bundle_id)
-        });
+        let is_interrupt = config
+            .flow_guard
+            .interrupt_apps
+            .iter()
+            .any(|app| app.eq_ignore_ascii_case(new_bundle_id));
 
         if is_interrupt && config.flow_guard.enabled {
             let duration = tracker

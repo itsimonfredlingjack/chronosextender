@@ -69,9 +69,7 @@ pub async fn run(app_handle: AppHandle, state: Arc<DaemonState>) {
                         config.tracking.dedup_threshold_seconds
                     };
 
-                    if elapsed.as_secs() < dedup_threshold
-                        && tracker.current_event_id.is_some()
-                    {
+                    if elapsed.as_secs() < dedup_threshold && tracker.current_event_id.is_some() {
                         // Too quick, skip this change
                         tokio::time::sleep(std::time::Duration::from_millis(poll_interval)).await;
                         continue;
@@ -142,14 +140,21 @@ pub async fn run(app_handle: AppHandle, state: Arc<DaemonState>) {
 
                             log::info!(
                                 "New event: {} - {} (id: {})",
-                                app_name, window_title, event_id
+                                app_name,
+                                window_title,
+                                event_id
                             );
 
-                            app_handle.emit("window-changed", serde_json::json!({
-                                "event_id": event_id,
-                                "app_name": &app_name,
-                                "window_title": &window_title,
-                            })).ok();
+                            app_handle
+                                .emit(
+                                    "window-changed",
+                                    serde_json::json!({
+                                        "event_id": event_id,
+                                        "app_name": &app_name,
+                                        "window_title": &window_title,
+                                    }),
+                                )
+                                .ok();
                         }
                         Err(e) => {
                             log::error!("Failed to insert event: {}", e);
@@ -161,8 +166,7 @@ pub async fn run(app_handle: AppHandle, state: Arc<DaemonState>) {
                     tracker.last_change = now;
                 } else {
                     // Same window — update duration
-                    if let (Some(id), Some(start)) =
-                        (tracker.current_event_id, tracker.event_start)
+                    if let (Some(id), Some(start)) = (tracker.current_event_id, tracker.event_start)
                     {
                         let duration = start.elapsed().as_secs() as i64;
                         state.db.update_event_duration(id, duration).ok();

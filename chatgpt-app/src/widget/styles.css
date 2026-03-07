@@ -1,0 +1,242 @@
+:root {
+  color-scheme: dark;
+  font-family:
+    "IBM Plex Sans",
+    "Avenir Next",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(246, 173, 85, 0.24), transparent 34%),
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.18), transparent 28%),
+    #07111a;
+  color: #f4efe6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.widget-shell {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.hero-card,
+.panel {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 18, 30, 0.82);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+}
+
+.hero-card {
+  padding: 1.25rem;
+}
+
+.hero-topline,
+.panel-header,
+.summary-meta,
+.session-card,
+.project-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.72rem;
+  color: #f5c37b;
+}
+
+.period-pill {
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.8rem;
+  text-transform: capitalize;
+}
+
+.hero-card h1 {
+  margin: 0.5rem 0 0.35rem;
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  line-height: 1.1;
+}
+
+.hero-card p,
+.summary-copy,
+.empty-copy,
+.session-card span,
+.project-copy span,
+.trend-card small {
+  color: rgba(244, 239, 230, 0.72);
+}
+
+.hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.hero-metrics article {
+  padding: 0.9rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  display: grid;
+  gap: 0.2rem;
+}
+
+.hero-metrics strong {
+  font-size: 1.35rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.panel {
+  padding: 1rem;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.panel-header span,
+.summary-meta span,
+.trend-card span {
+  font-size: 0.82rem;
+}
+
+.summary-panel {
+  background:
+    linear-gradient(135deg, rgba(245, 195, 123, 0.12), rgba(61, 171, 247, 0.08)),
+    rgba(8, 18, 30, 0.82);
+}
+
+.summary-copy {
+  margin: 0.9rem 0 1rem;
+  line-height: 1.55;
+}
+
+.summary-meta {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.project-list,
+.session-list,
+.trend-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.project-row {
+  align-items: center;
+}
+
+.project-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+  flex: 1;
+}
+
+.project-copy strong,
+.session-card strong {
+  font-size: 0.95rem;
+}
+
+.project-bar {
+  flex: 1;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.project-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.project-hours {
+  min-width: 3rem;
+  text-align: right;
+}
+
+.session-card,
+.trend-card {
+  padding: 0.85rem 0.95rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.session-card {
+  align-items: flex-start;
+}
+
+.session-card > div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.trend-list {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.trend-card {
+  display: grid;
+  gap: 0.15rem;
+}
+
+@media (min-width: 720px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .widget-shell {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .hero-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .project-row,
+  .session-card,
+  .panel-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .project-bar,
+  .project-hours {
+    width: 100%;
+  }
+
+  .project-hours {
+    text-align: left;
+  }
+}

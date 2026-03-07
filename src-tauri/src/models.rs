@@ -112,6 +112,25 @@ pub struct OllamaStatus {
     pub available_models: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct CloudSyncStatus {
+    pub enabled: bool,
+    pub configured: bool,
+    pub base_url: String,
+    pub device_id: String,
+    pub last_sync_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct CloudSyncReport {
+    pub synced_dates: Vec<String>,
+    pub uploaded_summaries: usize,
+    pub uploaded_project_rollups: usize,
+    pub uploaded_flow_sessions: usize,
+    pub last_sync_at: Option<String>,
+    pub failures: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectSummary {
     pub projects: Vec<ProjectTimeEntry>,
@@ -153,6 +172,73 @@ pub struct NlpParsedEntry {
     pub category: String,
     pub project: Option<String>,
     pub task_description: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssistantHistoryMessage {
+    pub role: String,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssistantContextEvent {
+    pub start_time: String,
+    pub end_time: Option<String>,
+    pub project: Option<String>,
+    pub category: Option<String>,
+    pub app_name: String,
+    pub task_description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssistantRecentSummary {
+    pub date: String,
+    pub total_hours: f64,
+    pub top_category: String,
+    pub top_project: String,
+    pub summary: String,
+    pub productivity_score: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssistantProjectTotal {
+    pub project: String,
+    pub seconds: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssistantContextSnapshot {
+    pub current_date: String,
+    pub today_total_seconds: i64,
+    pub week_total_seconds: i64,
+    pub today_event_count: usize,
+    pub pending_count: usize,
+    pub current_flow_minutes: u64,
+    pub top_projects: Vec<AssistantProjectTotal>,
+    pub recent_events: Vec<AssistantContextEvent>,
+    pub recent_summaries: Vec<AssistantRecentSummary>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssistantSecretStatus {
+    pub provider: String,
+    pub configured: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssistantStreamRequest {
+    pub request_id: String,
+    pub history: Vec<AssistantHistoryMessage>,
+    pub context_xml: String,
+    pub user_message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssistantStreamEventPayload {
+    pub request_id: String,
+    pub event_type: String,
+    pub delta: Option<String>,
+    pub error: Option<String>,
 }
 
 pub const CATEGORIES: &[&str] = &[

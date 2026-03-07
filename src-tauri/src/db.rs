@@ -267,6 +267,28 @@ impl Database {
         Ok(events)
     }
 
+    pub fn get_event_dates_since(&self, since: Option<&str>) -> Result<Vec<String>> {
+        let conn = self.conn.lock().unwrap();
+        if let Some(date) = since {
+            let mut stmt = conn.prepare(
+                "SELECT DISTINCT date(start_time)
+                 FROM events
+                 WHERE date(start_time) >= ?1
+                 ORDER BY date(start_time) ASC",
+            )?;
+            let rows = stmt.query_map(params![date], |row| row.get(0))?;
+            rows.collect::<Result<Vec<String>>>()
+        } else {
+            let mut stmt = conn.prepare(
+                "SELECT DISTINCT date(start_time)
+                 FROM events
+                 ORDER BY date(start_time) ASC",
+            )?;
+            let rows = stmt.query_map([], |row| row.get(0))?;
+            rows.collect::<Result<Vec<String>>>()
+        }
+    }
+
     pub fn get_pending_events(&self) -> Result<Vec<Event>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
@@ -482,7 +504,14 @@ impl Database {
             "INSERT INTO events (start_time, end_time, app_bundle_id, app_name, duration_seconds,
              category, project, task_description, confidence, classification_source)
              VALUES (?1, ?2, 'manual', 'Manual Entry', ?3, ?4, ?5, ?6, 1.0, 'manual')",
-            params![start_time, end_time, duration_seconds, category, project, task_description],
+            params![
+                start_time,
+                end_time,
+                duration_seconds,
+                category,
+                project,
+                task_description
+            ],
         )?;
         Ok(conn.last_insert_rowid())
     }
@@ -507,6 +536,29 @@ impl Database {
             })
         })?;
         Ok(rows.next().transpose()?)
+    }
+
+    pub fn get_summary_dates_since(&self, since: Option<&str>) -> Result<Vec<String>> {
+        let conn = self.conn.lock().unwrap();
+        if let Some(date) = since {
+            let mut stmt = conn.prepare(
+                "SELECT DISTINCT period_start
+                 FROM summaries
+                 WHERE period_type = 'daily' AND period_start >= ?1
+                 ORDER BY period_start ASC",
+            )?;
+            let rows = stmt.query_map(params![date], |row| row.get(0))?;
+            rows.collect::<Result<Vec<String>>>()
+        } else {
+            let mut stmt = conn.prepare(
+                "SELECT DISTINCT period_start
+                 FROM summaries
+                 WHERE period_type = 'daily'
+                 ORDER BY period_start ASC",
+            )?;
+            let rows = stmt.query_map([], |row| row.get(0))?;
+            rows.collect::<Result<Vec<String>>>()
+        }
     }
 
     // --- Flow Sessions ---
@@ -563,5 +615,27 @@ impl Database {
             })?
             .collect::<Result<Vec<_>>>()?;
         Ok(sessions)
+    }
+
+    pub fn get_flow_session_dates_since(&self, since: Option<&str>) -> Result<Vec<String>> {
+        let conn = self.conn.lock().unwrap();
+        if let Some(date) = since {
+            let mut stmt = conn.prepare(
+                "SELECT DISTINCT date(start_time)
+                 FROM flow_sessions
+                 WHERE date(start_time) >= ?1
+                 ORDER BY date(start_time) ASC",
+            )?;
+            let rows = stmt.query_map(params![date], |row| row.get(0))?;
+            rows.collect::<Result<Vec<String>>>()
+        } else {
+            let mut stmt = conn.prepare(
+                "SELECT DISTINCT date(start_time)
+                 FROM flow_sessions
+                 ORDER BY date(start_time) ASC",
+            )?;
+            let rows = stmt.query_map([], |row| row.get(0))?;
+            rows.collect::<Result<Vec<String>>>()
+        }
     }
 }

@@ -1,6 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  AssistantContextSnapshot,
+  AssistantSecretStatus,
   Event,
+  CloudSyncReport,
+  CloudSyncStatus,
   FlowSession,
   FlowStatus,
   NewProject,
@@ -14,6 +18,7 @@ import type {
   Settings,
   Summary,
 } from "./types";
+import type { AssistantMessage } from "../types/ai-types";
 
 export const api = {
   getTodayEvents: () => invoke<Event[]>("get_today_events"),
@@ -55,6 +60,8 @@ export const api = {
 
   getOllamaStatus: () => invoke<OllamaStatus>("get_ollama_status"),
 
+  getCloudSyncStatus: () => invoke<CloudSyncStatus>("get_cloud_sync_status"),
+
   getSettings: () => invoke<Settings>("get_settings"),
 
   updateSettings: (settings: Settings) =>
@@ -74,4 +81,29 @@ export const api = {
   triggerDailySummary: (date: string) => invoke<string>("trigger_daily_summary", { date }),
   logTimeNlp: (input: string) => invoke<NlpLogResult>("log_time_nlp", { input }),
   getDailySummary: (date: string) => invoke<Summary | null>("get_daily_summary", { date }),
+  syncCloudNow: () => invoke<CloudSyncReport>("sync_cloud_now"),
+  getAssistantContextSnapshot: () =>
+    invoke<AssistantContextSnapshot>("get_assistant_context_snapshot"),
+  getAssistantSecretStatus: (provider: string) =>
+    invoke<AssistantSecretStatus>("get_assistant_secret_status", { provider }),
+  setAssistantApiKey: (provider: string, apiKey: string) =>
+    invoke<boolean>("set_assistant_api_key", { provider, apiKey }),
+  clearAssistantApiKey: (provider: string) =>
+    invoke<boolean>("clear_assistant_api_key", { provider }),
+  startAssistantStream: (request: {
+    requestId: string;
+    history: AssistantMessage[];
+    contextXml: string;
+    userMessage: string;
+  }) =>
+    invoke<boolean>("start_assistant_stream", {
+      request: {
+        request_id: request.requestId,
+        history: request.history,
+        context_xml: request.contextXml,
+        user_message: request.userMessage,
+      },
+    }),
+  cancelAssistantStream: (requestId: string) =>
+    invoke<boolean>("cancel_assistant_stream", { requestId }),
 };

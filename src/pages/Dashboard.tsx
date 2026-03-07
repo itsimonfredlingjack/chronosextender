@@ -95,7 +95,7 @@ function IdleSummary() {
           <span className="text-amber-400/80">Tip:</span> Grant <strong className="text-gray-300">Accessibility</strong> permission in System Settings {"\u2192"} Privacy & Security for window tracking.
         </p>
         <p className="text-xs text-gray-500">
-          {"\u2318"}+Shift+T for quick overlay {" \u00B7 "} {"\u2318"}K for commands
+          {"\u2318"}+Shift+T for quick overlay {" \u00B7 "} {"\u2318"}K for AI {" \u00B7 "} {"\u2318"}{"\u21E7"}K for commands
         </p>
       </div>
     </div>

@@ -73,8 +73,15 @@ pub async fn classify_event(
     if let Ok(rules) = state.db.get_rules_ordered() {
         for rule in &rules {
             if let Some(result) = try_rule(rule, app_name, window_title, bundle_id, browser_url) {
-                if let Err(e) = state.db.update_event_classification(event_id, &result, "rule") {
-                    log::error!("Failed to update classification for event {}: {}", event_id, e);
+                if let Err(e) = state
+                    .db
+                    .update_event_classification(event_id, &result, "rule")
+                {
+                    log::error!(
+                        "Failed to update classification for event {}: {}",
+                        event_id,
+                        e
+                    );
                 }
                 return;
             }
@@ -82,7 +89,16 @@ pub async fn classify_event(
     }
 
     // Step 2: Try Ollama LLM
-    match classify_with_ollama(state, app_name, window_title, bundle_id, browser_url, duration_seconds).await {
+    match classify_with_ollama(
+        state,
+        app_name,
+        window_title,
+        bundle_id,
+        browser_url,
+        duration_seconds,
+    )
+    .await
+    {
         Ok(result) => {
             let config = state.config.lock().await;
             let source = if result.confidence >= config.ai.min_confidence_threshold {
@@ -90,8 +106,15 @@ pub async fn classify_event(
             } else {
                 "pending"
             };
-            if let Err(e) = state.db.update_event_classification(event_id, &result, source) {
-                log::error!("Failed to update classification for event {}: {}", event_id, e);
+            if let Err(e) = state
+                .db
+                .update_event_classification(event_id, &result, source)
+            {
+                log::error!(
+                    "Failed to update classification for event {}: {}",
+                    event_id,
+                    e
+                );
             }
         }
         Err(e) => {
@@ -129,7 +152,10 @@ fn try_rule(
             .map(|re| re.is_match(window_title))
             .unwrap_or(false),
         "url_contains" => browser_url
-            .map(|url| url.to_lowercase().contains(&rule.match_value.to_lowercase()))
+            .map(|url| {
+                url.to_lowercase()
+                    .contains(&rule.match_value.to_lowercase())
+            })
             .unwrap_or(false),
         "bundle_id" => bundle_id.eq_ignore_ascii_case(&rule.match_value),
         _ => false,
@@ -166,9 +192,16 @@ async fn classify_with_ollama(
     drop(config);
 
     classify_with_ollama_model(
-        &ollama_url, &model, timeout_ms,
-        app_name, window_title, bundle_id, browser_url, duration_seconds,
-    ).await
+        &ollama_url,
+        &model,
+        timeout_ms,
+        app_name,
+        window_title,
+        bundle_id,
+        browser_url,
+        duration_seconds,
+    )
+    .await
 }
 
 async fn classify_with_ollama_model(
@@ -242,7 +275,8 @@ fn parse_classification(
 
     // Fallback: try to extract fields with regex
     let project = extract_json_string(content, "project");
-    let category = extract_json_string(content, "category").unwrap_or_else(|| "unknown".to_string());
+    let category =
+        extract_json_string(content, "category").unwrap_or_else(|| "unknown".to_string());
     let task_description = extract_json_string(content, "task_description");
     let confidence = extract_json_number(content, "confidence").unwrap_or(0.3);
     let billable = extract_json_bool(content, "billable").unwrap_or(false);
@@ -289,11 +323,7 @@ fn extract_json_bool(content: &str, key: &str) -> Option<bool> {
 
 // --- Model lifecycle management ---
 
-async fn set_model_keep_alive(
-    ollama_url: &str,
-    model: &str,
-    keep_alive: &str,
-) {
+async fn set_model_keep_alive(ollama_url: &str, model: &str, keep_alive: &str) {
     let client = reqwest::Client::new();
     let _ = client
         .post(format!("{}/api/generate", ollama_url))
@@ -335,7 +365,10 @@ pub async fn batch_reclassify(state: &Arc<DaemonState>) -> Result<usize, String>
         return Ok(0);
     }
 
-    log::info!("Tier 2 batch: {} pending events to reclassify", pending.len());
+    log::info!(
+        "Tier 2 batch: {} pending events to reclassify",
+        pending.len()
+    );
 
     // Model swap: unload Tier 1, load Tier 2
     unload_model(&ollama_url, &tier1).await;
@@ -380,7 +413,11 @@ pub async fn batch_reclassify(state: &Arc<DaemonState>) -> Result<usize, String>
     unload_model(&ollama_url, &tier2).await;
     load_model_permanent(&ollama_url, &tier1).await;
 
-    log::info!("Tier 2 batch complete: {}/{} reclassified", reclassified, pending.len());
+    log::info!(
+        "Tier 2 batch complete: {}/{} reclassified",
+        reclassified,
+        pending.len()
+    );
     Ok(reclassified)
 }
 
@@ -407,7 +444,10 @@ pub async fn generate_daily_summary(
     let timeout = config.ai.classify_timeout_ms;
     drop(config);
 
-    let events = state.db.get_events_for_date(date).map_err(|e| e.to_string())?;
+    let events = state
+        .db
+        .get_events_for_date(date)
+        .map_err(|e| e.to_string())?;
     if events.is_empty() {
         return Err("No events for this date".to_string());
     }
@@ -416,17 +456,20 @@ pub async fn generate_daily_summary(
     let total_seconds: i64 = events.iter().map(|e| e.duration_seconds).sum();
     let total_hours = total_seconds as f64 / 3600.0;
 
-    let mut category_map: std::collections::HashMap<String, f64> =
-        std::collections::HashMap::new();
-    let mut project_map: std::collections::HashMap<String, f64> =
-        std::collections::HashMap::new();
-    let mut app_map: std::collections::HashMap<String, f64> =
-        std::collections::HashMap::new();
+    let mut category_map: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
+    let mut project_map: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
+    let mut app_map: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
 
     for event in &events {
         let hours = event.duration_seconds as f64 / 3600.0;
-        let cat = event.category.clone().unwrap_or_else(|| "unknown".to_string());
-        let proj = event.project.clone().unwrap_or_else(|| "Unclassified".to_string());
+        let cat = event
+            .category
+            .clone()
+            .unwrap_or_else(|| "unknown".to_string());
+        let proj = event
+            .project
+            .clone()
+            .unwrap_or_else(|| "Unclassified".to_string());
         *category_map.entry(cat).or_default() += hours;
         *project_map.entry(proj).or_default() += hours;
         *app_map.entry(event.app_name.clone()).or_default() += hours;

@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:chatgpt-app": "npm --prefix chatgpt-app run build",
     "preview": "vite preview",
+    "test:assistant": "node --test --import tsx test/assistant/**/*.test.ts",
+    "test:chatgpt-app": "npm --prefix chatgpt-app test",
     "tauri": "tauri"
   },
   "dependencies": {
@@ -20,10 +23,12 @@
     "@tauri-apps/plugin-global-shortcut": "^2"
   },
   "devDependencies": {
+    "@types/node": "^24.5.2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
     "typescript": "~5.8.3",
+    "tsx": "^4.20.5",
     "vite": "^7.0.4",
     "@tauri-apps/cli": "^2",
     "tailwindcss": "^4",
