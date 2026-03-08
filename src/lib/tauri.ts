@@ -82,6 +82,7 @@ export const api = {
   logTimeNlp: (input: string) => invoke<NlpLogResult>("log_time_nlp", { input }),
   getDailySummary: (date: string) => invoke<Summary | null>("get_daily_summary", { date }),
   syncCloudNow: () => invoke<CloudSyncReport>("sync_cloud_now"),
+  syncCloudFullResync: () => invoke<CloudSyncReport>("sync_cloud_full_resync"),
   getAssistantContextSnapshot: () =>
     invoke<AssistantContextSnapshot>("get_assistant_context_snapshot"),
   getAssistantSecretStatus: (provider: string) =>

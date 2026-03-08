@@ -32,7 +32,7 @@ export function createNavActions(
       id: "nav-review",
       label: "Go to Review",
       icon: "\u2630",
-      keywords: ["review", "pending", "blocks", "confirm"],
+      keywords: ["review", "blocks", "check", "look"],
       execute: () => { navigate("/review"); onClose(); },
     },
     {
@@ -64,10 +64,10 @@ export function createToggleActions(onClose: () => void): CommandAction[] {
     },
     {
       id: "ai-reclassify",
-      label: "Reclassify Pending (AI)",
-      description: "Use Tier 2 model to reclassify pending events",
+      label: "AI Review Pass",
+      description: "Ask AI to take another pass on items that still need review",
       icon: "\u2728",
-      keywords: ["reclassify", "ai", "batch", "pending", "tier2", "ollama"],
+      keywords: ["ai", "review", "batch", "unclear", "tier2", "ollama"],
       execute: async () => { await api.triggerBatchReclassify(); onClose(); },
     },
   ];
@@ -76,10 +76,10 @@ export function createToggleActions(onClose: () => void): CommandAction[] {
 export function createClassifyActions(onClose: () => void): CommandAction[] {
   return categories.map((cat) => ({
     id: `classify-all-${cat}`,
-    label: `Classify all pending as ${CATEGORY_LABELS[cat]}`,
-    description: "Reclassify all pending events",
+    label: `Mark review items as ${CATEGORY_LABELS[cat]}`,
+    description: "Apply one category to everything that still needs review",
     icon: "\u229E",
-    keywords: ["classify", "pending", "all", cat, CATEGORY_LABELS[cat].toLowerCase()],
+    keywords: ["classify", "review", "all", cat, CATEGORY_LABELS[cat].toLowerCase()],
     execute: async () => {
       const pending = await api.getPendingEvents();
       for (const e of pending) {

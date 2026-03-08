@@ -25,7 +25,7 @@ export default function OverlayProgressBar({ totalSeconds, goalHours = 8, pendin
         <div className="flex items-center gap-3">
           {pendingCount > 0 && (
             <span className="text-amber-600 font-medium">
-              {pendingCount} pending
+              {pendingCount} to review
             </span>
           )}
           <span className="tabular-nums">

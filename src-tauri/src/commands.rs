@@ -105,7 +105,31 @@ pub async fn get_ollama_status(state: State<'_, Arc<DaemonState>>) -> Result<Oll
 #[tauri::command]
 pub async fn get_cloud_sync_status(state: State<'_, Arc<DaemonState>>) -> Result<CloudSyncStatus> {
     let config = state.config.lock().await;
-    Ok(crate::daemon::cloud::cloud_sync_status(&config))
+    let base_status = crate::daemon::cloud::cloud_sync_status(&config);
+    drop(config);
+
+    let local_event_days = state
+        .db
+        .get_event_dates_since(None)
+        .map_err(|e| e.to_string())?
+        .len();
+    let local_summary_days = state
+        .db
+        .get_summary_dates_since(None)
+        .map_err(|e| e.to_string())?
+        .len();
+    let local_flow_days = state
+        .db
+        .get_flow_session_dates_since(None)
+        .map_err(|e| e.to_string())?
+        .len();
+
+    Ok(crate::daemon::cloud::enrich_cloud_sync_status(
+        base_status,
+        local_event_days,
+        local_summary_days,
+        local_flow_days,
+    ))
 }
 
 #[tauri::command]
@@ -344,6 +368,13 @@ pub async fn get_daily_summary(
 #[tauri::command]
 pub async fn sync_cloud_now(state: State<'_, Arc<DaemonState>>) -> Result<CloudSyncReport> {
     crate::daemon::cloud::sync_recent_aggregates(&state.inner().clone(), 7)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn sync_cloud_full_resync(state: State<'_, Arc<DaemonState>>) -> Result<CloudSyncReport> {
+    crate::daemon::cloud::sync_all_aggregates(&state.inner().clone())
         .await
         .map_err(|e| e.to_string())
 }

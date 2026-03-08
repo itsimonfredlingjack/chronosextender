@@ -74,7 +74,61 @@ pub fn cloud_sync_status(config: &AppConfig) -> CloudSyncStatus {
         base_url: config.cloud.base_url.clone(),
         device_id: default_device_id(),
         last_sync_at: config.cloud.last_sync_at.clone(),
+        issues: Vec::new(),
+        has_local_activity: false,
+        local_event_days: 0,
+        local_summary_days: 0,
+        local_flow_days: 0,
     }
+}
+
+pub fn enrich_cloud_sync_status(
+    mut status: CloudSyncStatus,
+    local_event_days: usize,
+    local_summary_days: usize,
+    local_flow_days: usize,
+) -> CloudSyncStatus {
+    let mut issues = Vec::new();
+    let trimmed_base_url = status.base_url.trim();
+
+    if !status.enabled {
+        issues.push("Hosted ChatGPT sync is turned off in Settings.".to_string());
+    }
+
+    if trimmed_base_url.is_empty() {
+        issues.push("Hosted Base URL is missing.".to_string());
+    } else if trimmed_base_url.trim_end_matches('/').ends_with("/mcp") {
+        issues.push(
+            "Hosted Base URL should be the worker origin without /mcp. ChatGPT uses /mcp, desktop sync does not."
+                .to_string(),
+        );
+    }
+
+    if !status.configured {
+        issues.push("Add both Hosted Base URL and Owner Sync Token before syncing.".to_string());
+    }
+
+    let has_local_activity = local_event_days > 0 || local_flow_days > 0;
+    if has_local_activity && status.last_sync_at.is_none() {
+        issues.push(
+            "Local activity exists, but nothing has been synced to the hosted ChatGPT layer yet."
+                .to_string(),
+        );
+    }
+
+    if local_summary_days == 0 {
+        issues.push(
+            "No local daily summaries exist yet, so recent summary cards will stay empty until a daily summary is generated."
+                .to_string(),
+        );
+    }
+
+    status.issues = issues;
+    status.has_local_activity = has_local_activity;
+    status.local_event_days = local_event_days;
+    status.local_summary_days = local_summary_days;
+    status.local_flow_days = local_flow_days;
+    status
 }
 
 pub fn build_day_summary_payload(
@@ -188,6 +242,21 @@ pub fn collect_sync_dates(
     dates.into_iter().collect()
 }
 
+pub fn collect_full_sync_dates(
+    today: &str,
+    activity_dates: &[String],
+    flow_dates: &[String],
+) -> Vec<String> {
+    let mut dates = BTreeSet::new();
+
+    for date in activity_dates.iter().chain(flow_dates.iter()) {
+        dates.insert(date.clone());
+    }
+
+    dates.insert(today.to_string());
+    dates.into_iter().collect()
+}
+
 pub async fn sync_recent_aggregates(
     state: &Arc<DaemonState>,
     days_back: usize,
@@ -224,6 +293,31 @@ pub async fn sync_recent_aggregates(
             })
             .collect::<Vec<_>>()
     };
+    sync_dates(state, &dates).await
+}
+
+pub async fn sync_all_aggregates(state: &Arc<DaemonState>) -> Result<CloudSyncReport, String> {
+    let today = Local::now().date_naive();
+    let mut activity_dates = state
+        .db
+        .get_summary_dates_since(None)
+        .map_err(|e| e.to_string())?;
+    let event_dates = state
+        .db
+        .get_event_dates_since(None)
+        .map_err(|e| e.to_string())?;
+    let flow_dates = state
+        .db
+        .get_flow_session_dates_since(None)
+        .map_err(|e| e.to_string())?;
+
+    activity_dates.extend(event_dates);
+
+    let dates = collect_full_sync_dates(
+        &today.format("%Y-%m-%d").to_string(),
+        &activity_dates,
+        &flow_dates,
+    );
     sync_dates(state, &dates).await
 }
 
@@ -373,8 +467,9 @@ async fn post_json<T: Serialize>(
 mod tests {
     use super::{
         build_day_summary_payload, build_flow_session_payloads, build_project_rollup_payloads,
-        collect_sync_dates,
+        cloud_sync_status, collect_full_sync_dates, collect_sync_dates, enrich_cloud_sync_status,
     };
+    use crate::config::{AppConfig, CloudConfig};
     use crate::models::{Event, FlowSession, Project, Summary};
 
     fn sample_event(project: Option<&str>, category: Option<&str>, duration_seconds: i64) -> Event {
@@ -507,6 +602,60 @@ mod tests {
         assert_eq!(
             dates,
             vec!["2026-03-05".to_string(), "2026-03-06".to_string()]
+        );
+    }
+
+    #[test]
+    fn cloud_sync_status_surfaces_missing_setup_and_empty_summary_clues() {
+        let config = AppConfig {
+            cloud: CloudConfig {
+                enabled: false,
+                base_url: "https://chronos.example.com/mcp".to_string(),
+                sync_token: String::new(),
+                last_sync_at: None,
+            },
+            ..AppConfig::default()
+        };
+
+        let status = enrich_cloud_sync_status(cloud_sync_status(&config), 4, 0, 2);
+
+        assert!(status.has_local_activity);
+        assert_eq!(status.local_event_days, 4);
+        assert_eq!(status.local_summary_days, 0);
+        assert!(status
+            .issues
+            .iter()
+            .any(|issue| issue.contains("without /mcp")));
+        assert!(status
+            .issues
+            .iter()
+            .any(|issue| issue.contains("nothing has been synced")));
+        assert!(status
+            .issues
+            .iter()
+            .any(|issue| issue.contains("No local daily summaries")));
+    }
+
+    #[test]
+    fn collect_full_sync_dates_backfills_every_local_day_and_keeps_today() {
+        let dates = collect_full_sync_dates(
+            "2026-03-08",
+            &[
+                "2026-03-05".to_string(),
+                "2026-03-07".to_string(),
+                "2026-03-05".to_string(),
+            ],
+            &["2026-03-06".to_string(), "2026-03-07".to_string()],
+        );
+
+        assert_eq!(
+            dates,
+            vec![
+                "2026-03-05".to_string(),
+                "2026-03-06".to_string(),
+                "2026-03-07".to_string(),
+                "2026-03-08".to_string(),
+            ]
         );
     }
 }

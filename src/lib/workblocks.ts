@@ -80,6 +80,10 @@ function getDominantProject(sessions: Session[]): string | null {
   return dominant;
 }
 
+export function isEventPendingReview(event: Event): boolean {
+  return event.classification_source === "pending" || event.confidence < 0.5;
+}
+
 export function aggregateToWorkBlocks(events: Event[]): WorkBlock[] {
   const sessions = aggregateToSessions(events);
   if (sessions.length === 0) return [];
@@ -111,6 +115,10 @@ export function aggregateToWorkBlocks(events: Event[]): WorkBlock[] {
 
   blocks.push(buildBlock(currentSessions, blocks.length));
   return blocks.reverse(); // newest first
+}
+
+export function aggregateToReviewWorkBlocks(events: Event[]): WorkBlock[] {
+  return aggregateToWorkBlocks(events.filter(isEventPendingReview));
 }
 
 function buildBlock(sessions: Session[], index: number): WorkBlock {

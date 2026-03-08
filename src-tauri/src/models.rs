@@ -119,6 +119,11 @@ pub struct CloudSyncStatus {
     pub base_url: String,
     pub device_id: String,
     pub last_sync_at: Option<String>,
+    pub issues: Vec<String>,
+    pub has_local_activity: bool,
+    pub local_event_days: usize,
+    pub local_summary_days: usize,
+    pub local_flow_days: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

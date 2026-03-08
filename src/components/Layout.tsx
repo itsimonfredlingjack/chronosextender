@@ -2,13 +2,20 @@ import { useState, useEffect, useCallback } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
 import { useOllamaStatus } from "../hooks/useOllamaStatus";
+import {
+  getAssistantPopoverDotClassName,
+  getAssistantPopoverValue,
+  useAssistantStatus,
+} from "../hooks/useAssistantStatus";
 import { api } from "../lib/tauri";
+import type { CloudSyncStatus, Settings } from "../lib/types";
 import CommandPalette from "./CommandPalette";
 import { AIChatPanel } from "./ai-chat/AIChatPanel";
 import StatusPopover from "./StatusPopover";
 
 export default function Layout() {
   const ollamaStatus = useOllamaStatus();
+  const assistantStatus = useAssistantStatus();
   const [cmdOpen, setCmdOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const closePalette = useCallback(() => setCmdOpen(false), []);
@@ -16,6 +23,8 @@ export default function Layout() {
   const [pendingCount, setPendingCount] = useState(0);
   const [statusOpen, setStatusOpen] = useState(false);
   const [trackingActive, setTrackingActive] = useState(true);
+  const [cloudStatus, setCloudStatus] = useState<CloudSyncStatus | null>(null);
+  const [appSettings, setAppSettings] = useState<Settings | null>(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -61,6 +70,38 @@ export default function Layout() {
     fetchTracking();
     const interval = setInterval(fetchTracking, 5000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const refreshAppStatus = async () => {
+      try {
+        const [settings, syncStatus] = await Promise.all([
+          api.getSettings(),
+          api.getCloudSyncStatus(),
+        ]);
+        if (!mounted) return;
+        setAppSettings(settings);
+        setCloudStatus(syncStatus);
+      } catch {
+        if (!mounted) return;
+        setCloudStatus(null);
+      }
+    };
+
+    void refreshAppStatus();
+    const interval = setInterval(() => {
+      void refreshAppStatus();
+    }, 15000);
+
+    const unlisten = listen("settings-updated", refreshAppStatus);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+      unlisten.then((fn) => fn());
+    };
   }, []);
 
   const handleToggleTracking = async () => {
@@ -124,8 +165,20 @@ export default function Layout() {
 
           <StatusPopover
             ollamaConnected={ollamaStatus.connected}
+            aiModelLabel={appSettings?.ai.tier1_model ?? null}
+            assistantValue={getAssistantPopoverValue(
+              assistantStatus.settings,
+              assistantStatus.secretStatus,
+              assistantStatus.loading
+            )}
+            assistantDotClassName={getAssistantPopoverDotClassName(
+              assistantStatus.settings,
+              assistantStatus.secretStatus,
+              assistantStatus.loading
+            )}
             trackingActive={trackingActive}
             pendingCount={pendingCount}
+            cloudStatus={cloudStatus}
             onToggleTracking={handleToggleTracking}
             isOpen={statusOpen}
             onOpen={() => setStatusOpen(true)}

@@ -147,6 +147,11 @@ export interface CloudSyncStatus {
   base_url: string;
   device_id: string;
   last_sync_at: string | null;
+  issues: string[];
+  has_local_activity: boolean;
+  local_event_days: number;
+  local_summary_days: number;
+  local_flow_days: number;
 }
 
 export interface CloudSyncReport {
