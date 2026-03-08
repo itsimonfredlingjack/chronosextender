@@ -72,22 +72,22 @@ export default function WorkBlockCard({ block, onApproved }: Props) {
 
   return (
     <div
-      className="bg-[#1a1a2e] rounded-xl p-5 border border-[#2a2a40] border-l-4 card-elevated transition-all hover:-translate-y-0.5"
+      className="bg-[var(--color-card)] rounded-xl p-5 border border-[var(--color-border)] border-l-4 card-elevated transition-all hover:-translate-y-0.5"
       style={{ borderLeftColor: color }}
     >
       <div className="flex items-start justify-between mb-2">
         <div>
-          <h4 className="text-base font-semibold text-white">{block.label}</h4>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <h4 className="text-base font-semibold text-slate-900">{block.label}</h4>
+          <p className="text-xs text-slate-600 mt-0.5">
             {startTime} — {endTime}
           </p>
         </div>
-        <span className="text-sm font-bold text-gray-300 tabular-nums">
+        <span className="text-sm font-bold text-slate-700 tabular-nums">
           {formatDuration(block.duration_seconds)}
         </span>
       </div>
 
-      <p className="text-xs text-gray-400 mb-3">{generateBlockDescription(block)}</p>
+      <p className="text-xs text-slate-600 mb-3">{generateBlockDescription(block)}</p>
 
       <CategoryMiniBar categories={categoryBreakdown} />
 
@@ -95,18 +95,18 @@ export default function WorkBlockCard({ block, onApproved }: Props) {
         {block.apps.map((app) => (
           <span
             key={app}
-            className="text-xs px-1.5 py-0.5 rounded bg-[#12121e] text-gray-400"
+            className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-surface)] text-slate-600"
           >
             {app}
           </span>
         ))}
       </div>
 
-      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#2a2a40]/50">
+      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[var(--color-border)]">
         <button
           onClick={handleApprove}
           disabled={approving}
-          className="flex-1 btn-primary text-xs focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 focus-visible:ring-offset-[#1a1a2e]"
+          className="flex-1 btn-primary text-xs focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-card)]"
         >
           {approving ? "Saving..." : "Approve"}
         </button>
@@ -120,17 +120,20 @@ export default function WorkBlockCard({ block, onApproved }: Props) {
                   key={cat}
                   onClick={() => handleEditCategory(cat)}
                   title={CATEGORY_LABELS[cat]}
-                  className="px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-medium text-white transition-all hover:scale-105 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 focus-visible:ring-offset-[#1a1a2e]"
-                  style={{ backgroundColor: catColor }}
+                  className="px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-medium transition-all hover:scale-105 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-card)]"
+                  style={{
+                    backgroundColor: catColor,
+                    color: cat === "unknown" ? "#334155" : "#f8fafc",
+                  }}
                 >
                   {CATEGORY_LABELS[cat].charAt(0)}
-                  <span className="text-white/70 text-[10px]">{CATEGORY_LABELS[cat]}</span>
+                  <span className="text-[10px] opacity-80">{CATEGORY_LABELS[cat]}</span>
                 </button>
               );
             })}
             <button
               onClick={() => setEditing(false)}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xs bg-[#22223a] text-gray-400 hover:bg-[#2a2a40] transition-colors"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs bg-[var(--color-elevated)] text-slate-500 hover:bg-[var(--color-border)] transition-colors"
             >
               ✕
             </button>

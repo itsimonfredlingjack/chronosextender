@@ -27,18 +27,18 @@ export default function CategoryRace({
         return (
           <div key={ct.category} className="flex items-center gap-3">
             <div className="flex items-center gap-2 w-28 justify-end">
-              <span className="text-xs text-gray-500 truncate" title={ct.label}>
+              <span className="text-xs text-slate-500 truncate" title={ct.label}>
                 {ct.label}
               </span>
               <div
-                className={`w-2 h-2 rounded-full shrink-0 ${isActive ? "ring-2 ring-offset-1 ring-offset-[#0a0a14]" : ""}`}
+                className={`w-2 h-2 rounded-full shrink-0 ${isActive ? "ring-2 ring-offset-1 ring-offset-[#f2efe7]" : ""}`}
                 style={{
                   backgroundColor: color,
                   boxShadow: isActive ? `0 0 6px ${color}50` : undefined,
                 }}
               />
             </div>
-            <div className="flex-1 h-1.5 bg-white/[0.03] rounded-full overflow-hidden">
+            <div className="flex-1 h-1.5 bg-[var(--color-elevated)] rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{
@@ -51,7 +51,7 @@ export default function CategoryRace({
                 }}
               />
             </div>
-            <span className="text-xs text-gray-600 w-14 tabular-nums text-right">
+            <span className="text-xs text-slate-600 w-14 tabular-nums text-right">
               {formatDuration(ct.seconds)}
             </span>
           </div>

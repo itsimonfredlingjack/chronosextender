@@ -106,19 +106,19 @@ export default function OverlayCommandBar({ pendingCount, trackingActive, onDism
 
   return (
     <div>
-      <div className="mx-5 border-t border-white/5" />
+      <div className="mx-5 border-t border-[var(--color-border)]" />
 
       <div className="flex items-center gap-3 px-5 py-2">
-        <span className="text-gray-500 text-xs">{"\u2318"}</span>
+        <span className="text-slate-500 text-xs">{"\u2318"}</span>
         <input
           ref={inputRef}
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="pause, review, reclassify..."
-          className="flex-1 py-1 bg-transparent text-sm text-white placeholder-gray-500 outline-none"
+          className="flex-1 py-1 bg-transparent text-sm text-slate-900 placeholder-slate-500 outline-none"
         />
-        <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500 border border-white/10">
+        <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface)] text-slate-500 border border-[var(--color-border)]">
           ESC
         </kbd>
       </div>
@@ -130,20 +130,20 @@ export default function OverlayCommandBar({ pendingCount, trackingActive, onDism
             onClick={() => action.execute()}
             className={`w-full px-5 py-2 flex items-center gap-3 text-left transition-colors ${
               i === selectedIndex
-                ? "bg-indigo-500/10 text-indigo-300"
-                : "text-gray-300 hover:bg-white/[0.03]"
+                ? "bg-indigo-500/12 text-indigo-700"
+                : "text-slate-700 hover:bg-[var(--color-elevated)]"
             }`}
           >
             <span className="text-sm w-5 text-center shrink-0">{action.icon}</span>
             <span className="flex-1 text-sm truncate">{action.label}</span>
             {action.description && (
-              <span className="text-xs text-gray-500">{action.description}</span>
+              <span className="text-xs text-slate-500">{action.description}</span>
             )}
           </button>
         ))}
       </div>
 
-      <div className="px-5 py-2 flex gap-3 text-[10px] text-gray-500 border-t border-white/5">
+      <div className="px-5 py-2 flex gap-3 text-[10px] text-slate-500 border-t border-[var(--color-border)]">
         <span>{"\u2191\u2193"} navigate</span>
         <span>{"\u21B5"} select</span>
         <span>esc close</span>

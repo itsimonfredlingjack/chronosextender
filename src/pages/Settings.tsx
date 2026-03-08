@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import PageTopStrip from "../components/PageTopStrip";
+import { useCommandDeckState } from "../hooks/useCommandDeckState";
 import { api } from "../lib/tauri";
 import { useOllamaStatus } from "../hooks/useOllamaStatus";
 import type {
@@ -13,6 +15,7 @@ import { ASSISTANT_MODEL_OPTIONS } from "../config/ai-config";
 import type { AIProvider } from "../types/ai-types";
 
 export default function Settings() {
+  const { visualState, statusLabel } = useCommandDeckState();
   const [settings, setSettings] = useState<SettingsType | null>(null);
   const [rules, setRules] = useState<Rule[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -157,12 +160,12 @@ export default function Settings() {
   if (!settings) {
     return (
       <div className="p-4 sm:p-6 space-y-6 max-w-3xl animate-pulse">
-        <div className="h-7 w-24 bg-[#1a1a2e] rounded" />
+        <div className="h-7 w-24 bg-[var(--color-card)] rounded" />
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-[#1a1a2e] rounded-lg p-5 border border-[#2a2a40] space-y-3">
-            <div className="h-4 w-28 bg-[#22223a] rounded" />
-            <div className="h-8 w-full bg-[#22223a] rounded" />
-            <div className="h-8 w-3/4 bg-[#22223a] rounded" />
+          <div key={i} className="bg-[var(--color-card)] rounded-lg p-5 border border-[var(--color-border)] space-y-3">
+            <div className="h-4 w-28 bg-[var(--color-elevated)] rounded" />
+            <div className="h-8 w-full bg-[var(--color-elevated)] rounded" />
+            <div className="h-8 w-3/4 bg-[var(--color-elevated)] rounded" />
           </div>
         ))}
       </div>
@@ -171,7 +174,12 @@ export default function Settings() {
 
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-3xl overflow-auto h-full">
-      <h2 className="text-xl font-semibold text-white animate-slide-up">Settings</h2>
+      <PageTopStrip
+        title="Settings"
+        subtitle="Configure tracking, AI, and sync behavior"
+        visualState={visualState}
+        statusLabel={statusLabel}
+      />
 
       {/* Projects — always visible */}
       <Section title="Projects">
@@ -182,21 +190,21 @@ export default function Settings() {
                 className="w-3 h-3 rounded-full shrink-0"
                 style={{ backgroundColor: project.color }}
               />
-              <span className="text-sm text-white flex-1">{project.name}</span>
+              <span className="text-sm text-slate-800 flex-1">{project.name}</span>
               {project.client && (
-                <span className="text-xs text-gray-400">{project.client}</span>
+                <span className="text-xs text-slate-600">{project.client}</span>
               )}
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-slate-600">
                 {project.is_billable ? "Billable" : "Non-billable"}
               </span>
             </div>
           ))}
           {projects.length === 0 && (
-            <p className="text-sm text-gray-400">No projects yet.</p>
+            <p className="text-sm text-slate-600">No projects yet.</p>
           )}
         </div>
         {showProjectForm ? (
-          <form onSubmit={handleSaveProject} className="space-y-2 border-t border-[#2a2a40] pt-3">
+          <form onSubmit={handleSaveProject} className="space-y-2 border-t border-[var(--color-border)] pt-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input
                 value={projectForm.name}
@@ -214,7 +222,7 @@ export default function Settings() {
             </div>
             <div className="flex items-center gap-2">
               <button type="submit" className="btn-primary text-xs">Save</button>
-              <button type="button" onClick={() => setShowProjectForm(false)} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300">
+              <button type="button" onClick={() => setShowProjectForm(false)} className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700">
                 Cancel
               </button>
             </div>
@@ -222,7 +230,7 @@ export default function Settings() {
         ) : (
           <button
             onClick={() => setShowProjectForm(true)}
-            className="text-xs text-indigo-400 hover:text-indigo-300"
+            className="text-xs text-indigo-600 hover:text-indigo-500"
           >
             + Add Project
           </button>
@@ -233,26 +241,26 @@ export default function Settings() {
       <Section title="Classification Rules">
         <div className="space-y-2">
           {rules.length === 0 ? (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-slate-600">
               No rules yet. Create rules from the Review Queue.
             </p>
           ) : (
             rules.map((rule) => (
               <div
                 key={rule.id}
-                className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 py-2 border-b border-[#2a2a40] last:border-0"
+                className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 py-2 border-b border-[var(--color-border)] last:border-0"
               >
-                <span className="text-xs text-gray-400 w-8">#{rule.priority}</span>
-                <span className="text-xs px-2 py-0.5 bg-[#12121e] rounded text-gray-300">
+                <span className="text-xs text-slate-600 w-8">#{rule.priority}</span>
+                <span className="text-xs px-2 py-0.5 bg-[var(--color-surface)] rounded text-slate-700">
                   {rule.match_type}
                 </span>
-                <span className="text-sm text-white flex-1 truncate">
+                <span className="text-sm text-slate-800 flex-1 truncate">
                   {rule.match_value}
                 </span>
-                <span className="text-xs text-indigo-400">{rule.target_category}</span>
+                <span className="text-xs text-indigo-600">{rule.target_category}</span>
                 <button
                   onClick={() => handleDeleteRule(rule.id)}
-                  className="text-xs text-red-400 hover:text-red-300"
+                  className="text-xs text-red-500 hover:text-red-400"
                 >
                   Delete
                 </button>
@@ -266,7 +274,7 @@ export default function Settings() {
       <div>
         <button
           onClick={() => setShowAdvanced((v) => !v)}
-          className="w-full flex items-center justify-between py-3 text-sm text-gray-500 hover:text-gray-300 transition-colors border-t border-[#2a2a40]"
+          className="w-full flex items-center justify-between py-3 text-sm text-slate-500 hover:text-slate-700 transition-colors border-t border-[var(--color-border)]"
         >
           <span className="font-medium">Advanced</span>
           <svg
@@ -293,16 +301,16 @@ export default function Settings() {
                   className={`w-3 h-3 rounded-full ${ollamaStatus.connected ? "bg-green-500" : "bg-red-500"
                     }`}
                 />
-                <span className="text-sm text-gray-300">
+                <span className="text-sm text-slate-700">
                   Ollama {ollamaStatus.connected ? "Connected" : "Disconnected"}
                 </span>
               </div>
               {ollamaStatus.available_models.length > 0 && (
-                <p className="text-xs text-gray-500 mb-3">
+                <p className="text-xs text-slate-500 mb-3">
                   Models: {ollamaStatus.available_models.join(", ")}
                 </p>
               )}
-              <label className="block text-xs text-gray-400 mb-1">Ollama URL</label>
+              <label className="block text-xs text-slate-600 mb-1">Ollama URL</label>
               <input
                 value={settings.ai.ollama_url}
                 onChange={(e) =>
@@ -315,7 +323,7 @@ export default function Settings() {
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">
+                  <label className="block text-xs text-slate-600 mb-1">
                     Tier 1 Model (Always-on)
                   </label>
                   <input
@@ -330,7 +338,7 @@ export default function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">
+                  <label className="block text-xs text-slate-600 mb-1">
                     Tier 2 Model (Batch)
                   </label>
                   <input
@@ -361,11 +369,11 @@ export default function Settings() {
                   }
                   className="rounded accent-indigo-500"
                 />
-                <label className="text-sm text-gray-300">Enable tracking</label>
+                <label className="text-sm text-slate-700">Enable tracking</label>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">
+                  <label className="block text-xs text-slate-600 mb-1">
                     Dedup Threshold (seconds)
                   </label>
                   <input
@@ -384,7 +392,7 @@ export default function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">
+                  <label className="block text-xs text-slate-600 mb-1">
                     Poll Interval (ms)
                   </label>
                   <input
@@ -422,10 +430,10 @@ export default function Settings() {
                   }
                   className="rounded accent-indigo-500"
                 />
-                <label className="text-sm text-gray-300">Enable Flow Guard</label>
+                <label className="text-sm text-slate-700">Enable Flow Guard</label>
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">
+                <label className="block text-xs text-slate-600 mb-1">
                   Flow Threshold (minutes)
                 </label>
                 <input
@@ -444,7 +452,7 @@ export default function Settings() {
                 />
               </div>
               <div className="mt-3">
-                <label className="block text-xs text-gray-400 mb-1">
+                <label className="block text-xs text-slate-600 mb-1">
                   Interrupt Apps (bundle IDs, one per line)
                 </label>
                 <textarea
@@ -479,12 +487,12 @@ export default function Settings() {
                   }
                   className="rounded accent-indigo-500"
                 />
-                <label className="text-sm text-gray-300">Enable hosted ChatGPT sync</label>
+                <label className="text-sm text-slate-700">Enable hosted ChatGPT sync</label>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Hosted Base URL</label>
+                  <label className="block text-xs text-slate-600 mb-1">Hosted Base URL</label>
                   <input
                     value={settings.cloud.base_url}
                     onChange={(e) =>
@@ -498,7 +506,7 @@ export default function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Owner Sync Token</label>
+                  <label className="block text-xs text-slate-600 mb-1">Owner Sync Token</label>
                   <input
                     type="password"
                     value={settings.cloud.sync_token}
@@ -514,23 +522,23 @@ export default function Settings() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-lg bg-[#12121e] border border-[#2a2a40] p-3 space-y-1.5">
-                <p className="text-xs text-gray-400">
-                  Device ID: <span className="text-gray-200">{cloudStatus?.device_id || "chronos-desktop"}</span>
+              <div className="mt-4 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] p-3 space-y-1.5">
+                <p className="text-xs text-slate-600">
+                  Device ID: <span className="text-slate-800">{cloudStatus?.device_id || "chronos-desktop"}</span>
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-slate-600">
                   Status:{" "}
-                  <span className={cloudStatus?.configured ? "text-emerald-400" : "text-amber-400"}>
+                  <span className={cloudStatus?.configured ? "text-emerald-600" : "text-amber-600"}>
                     {cloudStatus?.configured ? "Configured" : "Needs base URL and token"}
                   </span>
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-500">
                   Last sync: {settings.cloud.last_sync_at || "Never"}
                 </p>
               </div>
 
               <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-500">
                   Sync uploads daily summaries, project rollups, and flow sessions only.
                 </p>
                 <button
@@ -556,12 +564,12 @@ export default function Settings() {
                   }
                   className="rounded accent-indigo-500"
                 />
-                <label className="text-sm text-gray-300">Enable in-app assistant</label>
+                <label className="text-sm text-slate-700">Enable in-app assistant</label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Provider</label>
+                  <label className="block text-xs text-slate-600 mb-1">Provider</label>
                   <select
                     value={settings.assistant.provider}
                     onChange={(e) => {
@@ -584,7 +592,7 @@ export default function Settings() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Model</label>
+                  <label className="block text-xs text-slate-600 mb-1">Model</label>
                   <select
                     value={settings.assistant.model}
                     onChange={(e) =>
@@ -606,8 +614,8 @@ export default function Settings() {
 
               <div className="mt-4">
                 <div className="flex items-center justify-between gap-3">
-                  <label className="block text-xs text-gray-400">Temperature</label>
-                  <span className="text-xs text-gray-300 font-mono">
+                  <label className="block text-xs text-slate-600">Temperature</label>
+                  <span className="text-xs text-slate-700 font-mono">
                     {settings.assistant.temperature.toFixed(1)}
                   </span>
                 </div>
@@ -631,7 +639,7 @@ export default function Settings() {
               </div>
 
               <div className="mt-4">
-                <label className="block text-xs text-gray-400 mb-1">System Prompt</label>
+                <label className="block text-xs text-slate-600 mb-1">System Prompt</label>
                 <textarea
                   value={settings.assistant.system_prompt}
                   onChange={(e) =>
@@ -650,7 +658,7 @@ export default function Settings() {
 
               {settings.assistant.provider === "local" && (
                 <div className="mt-4">
-                  <label className="block text-xs text-gray-400 mb-1">Local Base URL</label>
+                  <label className="block text-xs text-slate-600 mb-1">Local Base URL</label>
                   <input
                     value={settings.assistant.local_base_url}
                     onChange={(e) =>
@@ -665,7 +673,7 @@ export default function Settings() {
                     className="input-field w-full"
                     placeholder="http://localhost:8080"
                   />
-                  <p className="mt-2 text-xs text-gray-500">
+                  <p className="mt-2 text-xs text-slate-500">
                     Chronos appends <span className="font-mono">/v1/chat/completions</span> unless you
                     provide a full <span className="font-mono">.../chat/completions</span> endpoint.
                   </p>
@@ -673,20 +681,20 @@ export default function Settings() {
               )}
 
               {settings.assistant.provider !== "local" && (
-                <div className="mt-4 rounded-lg bg-[#12121e] border border-[#2a2a40] p-4 space-y-3">
+                <div className="mt-4 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] p-4 space-y-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs text-gray-300">
+                      <p className="text-xs text-slate-700">
                         API key is stored securely in your system keychain.
                       </p>
-                      <p className="text-[11px] text-gray-500 mt-1">
-                        Current provider: <span className="text-gray-300">{settings.assistant.provider}</span>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Current provider: <span className="text-slate-700">{settings.assistant.provider}</span>
                       </p>
                     </div>
                     <span
                       className={`rounded-full px-2.5 py-1 text-[11px] ${assistantSecretStatus?.configured
-                          ? "bg-emerald-500/10 text-emerald-300"
-                          : "bg-amber-500/10 text-amber-300"
+                          ? "bg-emerald-500/12 text-emerald-700"
+                          : "bg-amber-500/12 text-amber-700"
                         }`}
                     >
                       {assistantSecretStatus?.configured ? "Stored" : "Missing"}
@@ -694,7 +702,7 @@ export default function Settings() {
                   </div>
 
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">API Key</label>
+                    <label className="block text-xs text-slate-600 mb-1">API Key</label>
                     <input
                       type="password"
                       value={assistantApiKey}
@@ -750,7 +758,7 @@ function Section({
 }) {
   return (
     <div className="settings-section animate-slide-up">
-      <h3 className="text-sm font-medium text-white mb-4 pl-2">{title}</h3>
+      <h3 className="text-sm font-medium text-slate-800 mb-4 pl-2">{title}</h3>
       {children}
     </div>
   );

@@ -42,11 +42,11 @@ export default function PendingBlockCard({
   };
 
   return (
-    <div className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40] card-elevated">
+    <div className="bg-[#fcfaf5] rounded-lg p-4 border border-[#d7d0c3] card-elevated">
       <div className="flex items-center justify-between mb-2">
         <div>
-          <p className="text-sm font-medium text-white">{appName}</p>
-          <p className="text-xs text-gray-400">
+          <p className="text-sm font-medium text-slate-900">{appName}</p>
+          <p className="text-xs text-slate-600">
             {startTime} · {mins}m · {events.length} event{events.length > 1 ? "s" : ""}
           </p>
         </div>
@@ -63,7 +63,7 @@ export default function PendingBlockCard({
               title={CATEGORY_LABELS[cat]}
               className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                 isSelected
-                  ? "ring-2 ring-offset-1 ring-indigo-500 ring-offset-[#1a1a2e] scale-110"
+                  ? "ring-2 ring-offset-1 ring-indigo-500 ring-offset-[#fcfaf5] scale-110"
                   : "opacity-60 hover:opacity-100"
               }`}
               style={{ backgroundColor: color, color: "#fff" }}
@@ -78,14 +78,14 @@ export default function PendingBlockCard({
         <button
           onClick={handleConfirm}
           disabled={!selected || saving}
-          className="flex-1 btn-primary text-xs focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 focus-visible:ring-offset-[#1a1a2e]"
+          className="flex-1 btn-primary text-xs focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 focus-visible:ring-offset-[#fcfaf5]"
         >
           {saving ? "Saving..." : selected ? `Confirm as ${CATEGORY_LABELS[selected]}` : "Pick a category"}
         </button>
         {selected && (
           <button
             onClick={() => onCreateRule(appName, selected)}
-            className="text-xs text-indigo-400 hover:underline shrink-0"
+            className="text-xs text-indigo-600 hover:underline shrink-0"
           >
             + Rule
           </button>

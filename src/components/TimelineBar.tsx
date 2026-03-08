@@ -119,10 +119,10 @@ export default function TimelineBar({ events }: TimelineBarProps) {
       </div>
 
       {/* Baseline + hour labels */}
-      <div className="h-px bg-white/[0.06] mt-1" />
+      <div className="h-px bg-[var(--color-border)] mt-1" />
       <div className="flex justify-between mt-1.5">
         {Array.from({ length: 10 }, (_, i) => (
-          <span key={i} className="text-[8px] text-gray-600 tabular-nums font-mono">
+          <span key={i} className="text-[8px] text-slate-500 tabular-nums font-mono">
             {(8 + i).toString().padStart(2, "0")}
           </span>
         ))}
@@ -131,7 +131,7 @@ export default function TimelineBar({ events }: TimelineBarProps) {
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="fixed z-50 bg-[#1a1a2e]/95 backdrop-blur-md shadow-lg rounded-lg p-3 text-xs border border-[#2a2a40] pointer-events-none max-w-64"
+          className="fixed z-50 bg-[var(--color-card)] backdrop-blur-md shadow-[0_16px_32px_rgba(30,41,59,0.18)] rounded-lg p-3 text-xs border border-[var(--color-border)] pointer-events-none max-w-64"
           style={{ left: tooltip.x + 10, top: tooltip.y - 80 }}
         >
           <div className="flex items-center gap-2 mb-1">
@@ -139,17 +139,17 @@ export default function TimelineBar({ events }: TimelineBarProps) {
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: CATEGORY_COLORS[tooltip.session.category] }}
             />
-            <span className="font-medium text-white">
+            <span className="font-medium text-slate-900">
               {CATEGORY_LABELS[tooltip.session.category] || "Unknown"}
             </span>
           </div>
-          <p className="text-gray-400">
+          <p className="text-slate-600">
             {tooltip.session.apps.join(", ")}
           </p>
-          <p className="text-gray-500 mt-1">
+          <p className="text-slate-500 mt-1">
             {formatDuration(tooltip.session.duration_seconds)}
             {tooltip.session.project && (
-              <span className="text-gray-600"> · {tooltip.session.project}</span>
+              <span className="text-slate-400"> · {tooltip.session.project}</span>
             )}
           </p>
         </div>

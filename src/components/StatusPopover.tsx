@@ -94,7 +94,7 @@ export default function StatusPopover({
       >
         <span className={`w-2 h-2 rounded-full ${dotColors[health]}`} />
         {pendingCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-[9px] font-bold text-black flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-[9px] font-bold text-amber-950 flex items-center justify-center">
             {pendingCount}
           </span>
         )}
@@ -103,23 +103,23 @@ export default function StatusPopover({
 
       {/* Popover */}
       {isOpen && (
-        <div className="absolute left-12 bottom-0 w-52 bg-[#1a1a2e] border border-[#2a2a40] rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="absolute left-12 bottom-0 w-52 bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-[0_18px_42px_rgba(30,41,59,0.22)] overflow-hidden z-50">
           {/* Ollama row */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-[#2a2a40]/50">
-            <span className={`w-2 h-2 rounded-full shrink-0 ${ollamaConnected ? "bg-emerald-400" : "bg-red-400"}`} />
-            <span className="text-xs text-gray-300 flex-1">Ollama</span>
-            <span className={`text-xs ${ollamaConnected ? "text-emerald-400" : "text-red-400"}`}>
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--color-border)]">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${ollamaConnected ? "bg-emerald-500" : "bg-red-500"}`} />
+            <span className="text-xs text-slate-700 flex-1">Ollama</span>
+            <span className={`text-xs ${ollamaConnected ? "text-emerald-600" : "text-red-600"}`}>
               {ollamaConnected ? "Connected" : "Offline"}
             </span>
           </div>
 
           {/* Tracking row */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-[#2a2a40]/50">
-            <span className={`w-2 h-2 rounded-full shrink-0 ${trackingActive ? "bg-indigo-400" : "bg-gray-600"}`} />
-            <span className="text-xs text-gray-300 flex-1">Tracking</span>
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--color-border)]">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${trackingActive ? "bg-indigo-500" : "bg-slate-400"}`} />
+            <span className="text-xs text-slate-700 flex-1">Tracking</span>
             <button
               onClick={() => { onToggleTracking(); }}
-              className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors"
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 transition-colors"
             >
               {trackingActive ? (
                 <><PauseIcon /><span>Pause</span></>
@@ -132,14 +132,14 @@ export default function StatusPopover({
           {/* Review row */}
           <button
             onClick={() => { navigate("/review"); onClose(); }}
-            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors text-left"
+            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--color-elevated)] transition-colors text-left"
           >
-            <span className={`w-2 h-2 rounded-full shrink-0 ${pendingCount > 0 ? "bg-amber-400" : "bg-gray-600"}`} />
-            <span className="text-xs text-gray-300 flex-1">Review</span>
-            <span className={`text-xs ${pendingCount > 0 ? "text-amber-400" : "text-gray-600"}`}>
+            <span className={`w-2 h-2 rounded-full shrink-0 ${pendingCount > 0 ? "bg-amber-500" : "bg-slate-400"}`} />
+            <span className="text-xs text-slate-700 flex-1">Review</span>
+            <span className={`text-xs ${pendingCount > 0 ? "text-amber-600" : "text-slate-500"}`}>
               {pendingCount > 0 ? `${pendingCount} items` : "Clear"}
             </span>
-            <span className="text-gray-600 text-xs">›</span>
+            <span className="text-slate-500 text-xs">›</span>
           </button>
         </div>
       )}

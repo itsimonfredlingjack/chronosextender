@@ -103,24 +103,24 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-[rgba(32,24,16,0.34)] backdrop-blur-[3px]"
         onClick={onClose}
       />
 
       {/* Panel */}
-      <div className="relative mx-auto mt-[15vh] w-full max-w-lg bg-[#1a1a2e] rounded-xl border border-[#2a2a40] shadow-2xl overflow-hidden animate-[fade-in_0.15s_ease-out]">
+      <div className="relative mx-auto mt-[15vh] w-full max-w-lg bg-[var(--color-card)] rounded-xl border border-[var(--color-border)] shadow-[0_28px_70px_rgba(30,41,59,0.22)] overflow-hidden animate-[fade-in_0.15s_ease-out]">
         {/* Search */}
-        <div className="flex items-center gap-3 px-4 border-b border-[#2a2a40]">
-          <span className="text-gray-500 text-sm">{"\u2318"}</span>
+        <div className="flex items-center gap-3 px-4 border-b border-[var(--color-border)]">
+          <span className="text-slate-500 text-sm">{"\u2318"}</span>
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type a command or describe work to log..."
-            className="flex-1 py-3 bg-transparent text-sm text-white placeholder-gray-500 outline-none"
+            className="flex-1 py-3 bg-transparent text-sm text-slate-900 placeholder-slate-500 outline-none"
           />
-          <kbd className="text-xs px-1.5 py-0.5 rounded bg-[#12121e] text-gray-500 border border-[#2a2a40]">
+          <kbd className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-surface)] text-slate-500 border border-[var(--color-border)]">
             ESC
           </kbd>
         </div>
@@ -133,8 +133,8 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
               disabled={nlpLoading}
               className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors outline-none ${
                 nlpResult
-                  ? "bg-emerald-500/10 text-emerald-300"
-                  : "bg-indigo-500/10 text-indigo-300"
+                  ? "bg-emerald-500/10 text-emerald-700"
+                  : "bg-indigo-500/10 text-indigo-700"
               }`}
             >
               <span className="text-base w-6 text-center shrink-0">
@@ -151,14 +151,14 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
                   {nlpResult || (nlpLoading ? "Parsing with AI..." : `Log time: ${query.trim()}`)}
                 </p>
                 {!nlpResult && !nlpLoading && (
-                  <p className="text-xs text-gray-400 truncate">
+                  <p className="text-xs text-slate-500 truncate">
                     AI will parse your description into time entries
                   </p>
                 )}
               </div>
             </button>
           ) : filtered.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-gray-500 text-center">
+            <p className="px-4 py-6 text-sm text-slate-500 text-center">
               No matching commands
             </p>
           ) : (
@@ -168,8 +168,8 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
                 onClick={() => action.execute()}
                 className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500 ${
                   i === selectedIndex
-                    ? "bg-indigo-500/10 text-indigo-300"
-                    : "text-gray-300 hover:bg-[#22223a]/50"
+                    ? "bg-indigo-500/12 text-indigo-700"
+                    : "text-slate-700 hover:bg-[var(--color-elevated)]"
                 }`}
               >
                 <span className="text-base w-6 text-center shrink-0">
@@ -178,7 +178,7 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{action.label}</p>
                   {action.description && (
-                    <p className="text-xs text-gray-400 truncate">
+                    <p className="text-xs text-slate-500 truncate">
                       {action.description}
                     </p>
                   )}
@@ -189,11 +189,11 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 border-t border-[#2a2a40] flex gap-3 text-xs text-gray-500">
+        <div className="px-4 py-2 border-t border-[var(--color-border)] flex gap-3 text-xs text-slate-500">
           <span>{"\u2191\u2193"} navigate</span>
           <span>{"\u21B5"} select</span>
           <span>esc close</span>
-          <span className="ml-auto text-gray-600">describe work to log</span>
+          <span className="ml-auto text-slate-500">describe work to log</span>
         </div>
       </div>
     </div>,

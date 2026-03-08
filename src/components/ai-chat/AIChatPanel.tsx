@@ -114,13 +114,13 @@ export function AIChatPanel({
       }`}
     >
       <div
-        className={`absolute inset-0 bg-[#030309]/55 backdrop-blur-[2px] transition duration-300 ${
+        className={`absolute inset-0 bg-[rgba(34,24,16,0.3)] backdrop-blur-[2px] transition duration-300 ${
           isOpen ? "opacity-100" : "opacity-0"
         }`}
         onClick={onClose}
       />
       <aside
-        className={`pointer-events-auto absolute inset-y-0 right-0 flex w-full max-w-full flex-col border-l border-white/10 bg-[linear-gradient(180deg,rgba(14,14,30,0.95),rgba(7,7,18,0.98))] shadow-[0_30px_90px_rgba(0,0,0,0.45)] backdrop-blur-3xl transition duration-300 sm:w-[380px] ${
+        className={`pointer-events-auto absolute inset-y-0 right-0 flex w-full max-w-full flex-col border-l border-[var(--color-border)] bg-[linear-gradient(180deg,rgba(252,248,241,0.97),rgba(244,238,228,0.94))] shadow-[0_30px_80px_rgba(30,41,59,0.2)] backdrop-blur-3xl transition duration-300 sm:w-[380px] ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -136,22 +136,22 @@ export function AIChatPanel({
           onClose={onClose}
         />
 
-        <div className="border-b border-white/10 bg-white/[0.02] px-4 py-3">
-          <p className="text-xs text-gray-400">
+        <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+          <p className="text-xs text-slate-600">
             {contextLoading
               ? "Refreshing local app context..."
               : `Context refreshes from local data on ${currentView} and live app events.`}
           </p>
-          {chat.error && <p className="mt-2 text-xs text-red-300">{chat.error}</p>}
+          {chat.error && <p className="mt-2 text-xs text-red-600">{chat.error}</p>}
         </div>
 
         <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
           {loadingSettings ? (
-            <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 text-sm text-gray-300">
+            <div className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm text-slate-700">
               Loading assistant settings...
             </div>
           ) : chat.messages.length === 0 ? (
-            <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 text-sm text-gray-300">
+            <div className="rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-sm text-slate-700">
               <p className="leading-6">
                 Ask things like "What did I work on today?" or "Which project took most time this
                 week?" and I will answer from your local Chronos context.

@@ -7,11 +7,14 @@ function formatTime(timestamp: string): string {
   });
 }
 
-function renderRichText(content: string) {
+function renderRichText(content: string, isUser: boolean) {
   const parts = content.split(/(\b\d+(?:\.\d+)?(?:h|m|%|x)?\b)/g);
   return parts.map((part, index) =>
     /^\d/.test(part) ? (
-      <span key={`${part}-${index}`} className="font-mono text-[0.95em] text-white">
+      <span
+        key={`${part}-${index}`}
+        className={`font-mono text-[0.95em] ${isUser ? "text-slate-50" : "text-indigo-950"}`}
+      >
         {part}
       </span>
     ) : (
@@ -32,24 +35,24 @@ export function ChatMessage({
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[88%] rounded-2xl border px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.25)] ${
+        className={`max-w-[88%] rounded-2xl border px-4 py-3 shadow-[0_16px_34px_rgba(30,41,59,0.18)] ${
           isUser
-            ? "border-indigo-400/40 bg-gradient-to-br from-indigo-500/90 to-indigo-400/70 text-white"
-            : "border-white/10 bg-white/[0.06] text-gray-100 backdrop-blur-xl"
+            ? "border-indigo-500/35 bg-gradient-to-br from-indigo-500/92 to-blue-500/78 text-slate-50"
+            : "border-[var(--color-border)] bg-[var(--color-surface)] text-slate-800 backdrop-blur-xl"
         }`}
       >
         <div className="whitespace-pre-wrap text-sm leading-6">
           {message.content ? (
-            renderRichText(message.content)
+            renderRichText(message.content, isUser)
           ) : streaming ? (
-            <div className="flex items-center gap-1.5 text-gray-300">
+            <div className="flex items-center gap-1.5 text-slate-500">
               <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.2s]" />
               <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.1s]" />
               <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce" />
             </div>
           ) : null}
         </div>
-        <div className={`mt-2 text-[11px] ${isUser ? "text-indigo-100/80" : "text-gray-500"}`}>
+        <div className={`mt-2 text-[11px] ${isUser ? "text-indigo-100/90" : "text-slate-500"}`}>
           {formatTime(message.createdAt)}
         </div>
       </div>
