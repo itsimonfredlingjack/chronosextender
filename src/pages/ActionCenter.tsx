@@ -75,8 +75,8 @@ export default function ActionCenter() {
       {/* Left — Insights */}
       <div className="w-3/5 p-6 space-y-6 overflow-auto">
         <div className="animate-[fade-in_0.3s_ease-out_backwards]" style={{ animationDelay: "0s" }}>
-          <h2 className="text-2xl font-bold text-white">Action Center</h2>
-          <p className="text-sm text-gray-400">Insights & unconfirmed time</p>
+          <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Action Center</h2>
+          <p className="text-sm text-slate-600">Insights & unconfirmed time</p>
         </div>
 
         <div className="animate-[fade-in_0.3s_ease-out_backwards]" style={{ animationDelay: "0.05s" }}>
@@ -87,17 +87,17 @@ export default function ActionCenter() {
           <CategoryTiles events={events} />
         </div>
 
-        <div className="bg-[#1a1a2e] rounded-xl p-5 border border-[#2a2a40] card-elevated animate-[fade-in_0.3s_ease-out_backwards]" style={{ animationDelay: "0.15s" }}>
+        <div className="bg-[#fcfaf5] rounded-xl p-5 border border-[#d7d0c3] card-elevated animate-[fade-in_0.3s_ease-out_backwards]" style={{ animationDelay: "0.15s" }}>
           <CategoryPieChart events={events} />
         </div>
       </div>
 
       {/* Right — Action Feed */}
-      <div className="w-2/5 p-6 border-l border-[#2a2a40] overflow-auto bg-[#0a0a14]">
+      <div className="w-2/5 p-6 border-l border-[#d7d0c3] overflow-auto bg-[#f2efe7]">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-medium text-white">Action Feed</h3>
-            <p className="text-xs text-gray-400">
+            <h3 className="text-lg font-medium text-[var(--color-text-primary)]">Action Feed</h3>
+            <p className="text-xs text-slate-600">
               {pendingEvents.length} pending event{pendingEvents.length !== 1 ? "s" : ""}
             </p>
           </div>
@@ -108,14 +108,14 @@ export default function ActionCenter() {
 
         {loadingPending ? (
           <div className="space-y-3">
-            <div className="h-28 bg-[#1a1a2e] rounded-lg animate-pulse" />
-            <div className="h-28 bg-[#1a1a2e] rounded-lg animate-pulse" />
-            <div className="h-28 bg-[#1a1a2e] rounded-lg animate-pulse" />
+            <div className="h-28 bg-[#fcfaf5] rounded-lg animate-pulse" />
+            <div className="h-28 bg-[#fcfaf5] rounded-lg animate-pulse" />
+            <div className="h-28 bg-[#fcfaf5] rounded-lg animate-pulse" />
           </div>
         ) : pendingGroups.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-xl mb-2 text-gray-500">All caught up!</p>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xl mb-2 text-slate-500">All caught up!</p>
+            <p className="text-xs text-slate-600 mt-1">
               No pending events to review
             </p>
           </div>

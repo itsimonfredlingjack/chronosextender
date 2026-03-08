@@ -14,7 +14,7 @@ export default function DayProgress({ totalSeconds, goalSeconds = 28800 }: Props
   const strokeDashoffset = circumference * (1 - progress);
 
   return (
-    <div className="bg-[#1a1a2e] rounded-xl p-5 border border-[#2a2a40] gradient-border card-elevated flex items-center gap-6">
+    <div className="bg-[#fcfaf5] rounded-xl p-5 border border-[#d7d0c3] gradient-border card-elevated flex items-center gap-6">
       <div className="shrink-0">
         <svg width="120" height="120" viewBox="0 0 120 120">
           <defs>
@@ -26,7 +26,7 @@ export default function DayProgress({ totalSeconds, goalSeconds = 28800 }: Props
           <circle
             cx="60" cy="60" r={radius}
             fill="none" strokeWidth="8"
-            className="stroke-[#2a2a40]"
+            className="stroke-[var(--color-border)]"
           />
           <circle
             cx="60" cy="60" r={radius}
@@ -40,14 +40,14 @@ export default function DayProgress({ totalSeconds, goalSeconds = 28800 }: Props
           />
           <text
             x="60" y="55" textAnchor="middle"
-            className="fill-white text-lg font-bold"
+            className="fill-[var(--color-text-primary)] text-lg font-bold"
             fontSize="20" fontWeight="700"
           >
             {hours}h {mins}m
           </text>
           <text
             x="60" y="73" textAnchor="middle"
-            className="fill-gray-400"
+            className="fill-[var(--color-text-muted)]"
             fontSize="11"
           >
             of {goalHours}h goal
@@ -56,11 +56,11 @@ export default function DayProgress({ totalSeconds, goalSeconds = 28800 }: Props
       </div>
 
       <div className="flex-1">
-        <h3 className="text-sm font-medium text-white mb-1">Today's Progress</h3>
+        <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-1">Today's Progress</h3>
         <p className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
           {Math.round(progress * 100)}%
         </p>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-slate-600 mt-1">
           {progress >= 1
             ? "Goal reached!"
             : `${Math.round((goalSeconds - totalSeconds) / 60)} minutes to go`}

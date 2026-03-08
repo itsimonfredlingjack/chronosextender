@@ -33,19 +33,19 @@ export default function CategoryTiles({ events }: Props) {
         return (
           <div
             key={tile.category}
-            className="bg-[#1a1a2e] rounded-lg p-4 border border-[#2a2a40] card-elevated transition-all"
+            className="bg-[#fcfaf5] rounded-lg p-4 border border-[#d7d0c3] card-elevated transition-all"
           >
             <div className="flex items-center gap-2 mb-1">
               <span
                 className="w-2.5 h-2.5 rounded-full shrink-0"
                 style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}40` }}
               />
-              <span className="text-xs text-gray-300">
+              <span className="text-xs text-slate-700">
                 {CATEGORY_LABELS[tile.category] || tile.category}
               </span>
             </div>
-            <p className="text-lg font-bold text-white">{formatDuration(tile.seconds)}</p>
-            <p className="text-xs text-gray-400">{tile.percentage}% of total</p>
+            <p className="text-lg font-bold text-slate-900">{formatDuration(tile.seconds)}</p>
+            <p className="text-xs text-slate-600">{tile.percentage}% of total</p>
           </div>
         );
       })}

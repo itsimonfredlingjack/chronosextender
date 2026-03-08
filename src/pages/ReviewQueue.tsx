@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { listen } from "@tauri-apps/api/event";
+import PageTopStrip from "../components/PageTopStrip";
+import WorkBlockCard from "../components/WorkBlockCard";
+import { useCommandDeckState } from "../hooks/useCommandDeckState";
 import { useEvents } from "../hooks/useEvents";
 import { api } from "../lib/tauri";
 import { aggregateToWorkBlocks } from "../lib/workblocks";
-import WorkBlockCard from "../components/WorkBlockCard";
 
 export default function ReviewQueue() {
   const { events, loading, refresh } = useEvents();
+  const { visualState, statusLabel } = useCommandDeckState();
   const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set());
   const [reclassifying, setReclassifying] = useState(false);
 
@@ -44,12 +47,12 @@ export default function ReviewQueue() {
   if (loading) {
     return (
       <div className="p-6 space-y-4">
-        <div className="h-6 w-32 bg-[#1a1a2e] rounded animate-pulse" />
+        <div className="h-6 w-32 bg-[var(--color-card)] rounded animate-pulse" />
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-[#1a1a2e] rounded-xl p-5 border border-[#2a2a40] space-y-3 animate-pulse">
-            <div className="h-4 w-48 bg-[#22223a] rounded" />
-            <div className="h-3 w-32 bg-[#22223a] rounded" />
-            <div className="h-2 w-full bg-[#22223a] rounded-full" />
+          <div key={i} className="bg-[var(--color-card)] rounded-xl p-5 border border-[var(--color-border)] space-y-3 animate-pulse">
+            <div className="h-4 w-48 bg-[var(--color-elevated)] rounded" />
+            <div className="h-3 w-32 bg-[var(--color-elevated)] rounded" />
+            <div className="h-2 w-full bg-[var(--color-elevated)] rounded-full" />
           </div>
         ))}
       </div>
@@ -58,33 +61,35 @@ export default function ReviewQueue() {
 
   return (
     <div className="p-6 space-y-4 overflow-auto h-full">
-      <div className="flex items-center justify-between animate-slide-up">
-        <div>
-          <h2 className="text-xl font-semibold text-white">Review</h2>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {pendingBlocks.length === 0
-              ? "All blocks confirmed"
-              : `${pendingBlocks.length} work block${pendingBlocks.length !== 1 ? "s" : ""} to review`}
-          </p>
-        </div>
-        <button
-          onClick={handleReclassify}
-          disabled={reclassifying}
-          className="btn-ghost text-xs flex items-center gap-1.5"
-        >
-          {reclassifying ? (
-            <>
-              <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
-              AI processing...
-            </>
-          ) : (
-            <>
-              <span className="text-indigo-400">✦</span>
-              Reclassify
-            </>
-          )}
-        </button>
-      </div>
+      <PageTopStrip
+        title="Review"
+        subtitle={
+          pendingBlocks.length === 0
+            ? "All blocks confirmed"
+            : `${pendingBlocks.length} work block${pendingBlocks.length !== 1 ? "s" : ""} to review`
+        }
+        visualState={visualState}
+        statusLabel={statusLabel}
+        rightSlot={(
+          <button
+            onClick={handleReclassify}
+            disabled={reclassifying}
+            className="btn-ghost text-xs flex items-center gap-1.5"
+          >
+            {reclassifying ? (
+              <>
+                <span className="w-3 h-3 border border-slate-500 border-t-transparent rounded-full animate-spin" />
+                AI processing...
+              </>
+            ) : (
+              <>
+                <span className="text-indigo-400">✦</span>
+                Reclassify
+              </>
+            )}
+          </button>
+        )}
+      />
 
       {pendingBlocks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -93,13 +98,13 @@ export default function ReviewQueue() {
             <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ring-pulse" />
             <div className="absolute inset-2 rounded-full bg-emerald-500/5 animate-ring-pulse" style={{ animationDelay: "1s" }} />
             <div className="absolute inset-0 rounded-full bg-emerald-500/10 flex items-center justify-center">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-emerald-400">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-emerald-600">
                 <path d="M20 6L9 17l-5-5" />
               </svg>
             </div>
           </div>
-          <p className="text-base font-medium text-gray-300">All clear</p>
-          <p className="text-xs text-gray-500 mt-1.5 max-w-xs">
+          <p className="text-base font-medium text-slate-700">All clear</p>
+          <p className="text-xs text-slate-500 mt-1.5 max-w-xs">
             Work blocks will appear here as you use your computer. Chronos groups related activity for easy review.
           </p>
         </div>

@@ -26,11 +26,11 @@ export default function FlowOrb({ flowStatus }: FlowOrbProps) {
         )}
       </div>
       <div>
-        <p className="text-sm font-medium text-white">
+        <p className="text-sm font-medium text-slate-800">
           {in_flow ? "In Flow" : current_app ? "Tracking" : "Idle"}
         </p>
         {current_app && (
-          <p className="text-xs text-gray-400 truncate max-w-40">{current_app}</p>
+          <p className="text-xs text-slate-600 truncate max-w-40">{current_app}</p>
         )}
       </div>
     </div>

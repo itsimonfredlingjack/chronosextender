@@ -18,15 +18,15 @@ export default function AIInsights({ events }: AIInsightsProps) {
   if (insights.length === 0) return null;
 
   return (
-    <div className="bg-[#1a1a2e] glass-card rounded-xl p-5 border border-[#2a2a40]">
-      <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+    <div className="bg-[#fcfaf5] glass-card rounded-xl p-5 border border-[#d7d0c3]">
+      <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-3 flex items-center gap-2">
         <span>&#x2728;</span> AI Insights
       </h3>
       <div className="space-y-2">
         {insights.map((insight, i) => (
           <div
             key={i}
-            className={`border-l-2 pl-3 py-2 text-sm text-gray-300 animate-[fade-in_0.3s_ease-out_backwards] ${TYPE_STYLES[insight.type]}`}
+            className={`border-l-2 pl-3 py-2 text-sm text-slate-700 animate-[fade-in_0.3s_ease-out_backwards] ${TYPE_STYLES[insight.type]}`}
             style={{ animationDelay: `${i * 0.1}s` }}
           >
             {insight.text}

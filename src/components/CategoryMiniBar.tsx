@@ -10,7 +10,7 @@ export default function CategoryMiniBar({ categories }: Props) {
   if (total === 0) return null;
 
   return (
-    <div className="flex h-2 rounded-full overflow-hidden bg-[#12121e]">
+    <div className="flex h-2 rounded-full overflow-hidden bg-[#f3ede2]">
       {categories.map((c) => (
         <div
           key={c.category}

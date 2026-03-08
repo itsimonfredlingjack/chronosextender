@@ -219,6 +219,23 @@ export interface DailySummaryData {
   productivity_score: number;
 }
 
+export type UIVisualState =
+  | "normal"
+  | "flow"
+  | "warning"
+  | "critical"
+  | "paused"
+  | "unknown";
+
+export type TimelineSegmentType = "tracked" | "flow" | "untracked" | "paused";
+
+export interface TimelineSegment {
+  type: TimelineSegmentType;
+  startPct: number;
+  endPct: number;
+  durationSeconds: number;
+}
+
 export interface CommandAction {
   id: string;
   label: string;

@@ -35,18 +35,18 @@ export default function OverlayPulse({ currentSession, flowStatus, trackingActiv
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-gray-600" />
-            <span className="text-base font-medium text-gray-500">Idle</span>
+            <div className="w-3 h-3 rounded-full bg-slate-400" />
+            <span className="text-base font-medium text-slate-600">Idle</span>
           </div>
           <button
             onClick={onToggle}
             title={trackingActive ? "Pause tracking" : "Resume tracking"}
-            className="text-gray-600 hover:text-gray-300 transition-colors opacity-60 hover:opacity-100 p-1"
+            className="text-slate-500 hover:text-slate-800 transition-colors opacity-70 hover:opacity-100 p-1"
           >
             {trackingActive ? <PauseIcon /> : <PlayIcon />}
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-1.5 ml-6">
+        <p className="text-xs text-slate-500 mt-1.5 ml-6">
           Start working to begin tracking
         </p>
       </div>
@@ -64,7 +64,7 @@ export default function OverlayPulse({ currentSession, flowStatus, trackingActiv
         <div className="flex items-center gap-2.5">
           <div className="relative">
             <div
-              className={`w-3 h-3 rounded-full ${trackingActive ? "" : "bg-gray-600"}`}
+              className={`w-3 h-3 rounded-full ${trackingActive ? "" : "bg-slate-400"}`}
               style={trackingActive ? { backgroundColor: color } : undefined}
             />
             {trackingActive && (
@@ -74,27 +74,27 @@ export default function OverlayPulse({ currentSession, flowStatus, trackingActiv
               />
             )}
           </div>
-          <span className="text-sm font-semibold text-white">{label}</span>
-          <span className="text-sm text-gray-500">{currentSession.apps[0]}</span>
+          <span className="text-sm font-semibold text-slate-900">{label}</span>
+          <span className="text-sm text-slate-500">{currentSession.apps[0]}</span>
         </div>
-        <div className="flex items-center gap-1 rounded-lg hover:bg-white/[0.04] px-1.5 py-0.5 -mx-1.5 -my-0.5 transition-colors cursor-default">
+        <div className="flex items-center gap-1 rounded-lg hover:bg-[var(--color-elevated)] px-1.5 py-0.5 -mx-1.5 -my-0.5 transition-colors cursor-default">
           <div className="flex items-baseline gap-0.5">
-            <span className="text-lg font-bold text-white tabular-nums">{main}</span>
-            <span className="text-sm text-gray-500 tabular-nums">:{secs}</span>
+            <span className="text-lg font-bold text-slate-900 tabular-nums">{main}</span>
+            <span className="text-sm text-slate-500 tabular-nums">:{secs}</span>
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); onToggle(); }}
             title={trackingActive ? "Pause tracking" : "Resume tracking"}
-            className="text-gray-600 hover:text-gray-300 transition-colors opacity-60 hover:opacity-100 p-1 ml-0.5"
+            className="text-slate-500 hover:text-slate-800 transition-colors opacity-70 hover:opacity-100 p-1 ml-0.5"
           >
             {trackingActive ? <PauseIcon /> : <PlayIcon />}
           </button>
         </div>
       </div>
 
-      <div className="mt-1 ml-[22px] flex items-center gap-2 text-xs text-gray-400">
+      <div className="mt-1 ml-[22px] flex items-center gap-2 text-xs text-slate-600">
         {!trackingActive && (
-          <span className="px-1.5 py-0.5 bg-gray-500/20 text-gray-400 rounded-full font-medium text-[10px]">
+          <span className="px-1.5 py-0.5 bg-slate-400/20 text-slate-600 rounded-full font-medium text-[10px]">
             Paused
           </span>
         )}
@@ -107,7 +107,7 @@ export default function OverlayPulse({ currentSession, flowStatus, trackingActiv
           </>
         )}
         {isInFlow && trackingActive && (
-          <span className="px-1.5 py-0.5 bg-indigo-500/20 text-indigo-300 rounded-full font-medium text-[10px]">
+          <span className="px-1.5 py-0.5 bg-indigo-500/20 text-indigo-700 rounded-full font-medium text-[10px]">
             In Flow
           </span>
         )}

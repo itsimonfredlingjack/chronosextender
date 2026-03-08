@@ -11,10 +11,10 @@ function CenterLabel({ viewBox, totalHours }: { viewBox?: { cx: number; cy: numb
   const { cx, cy } = viewBox;
   return (
     <g>
-      <text x={cx} y={cy - 4} textAnchor="middle" className="fill-white text-xl font-bold">
+      <text x={cx} y={cy - 4} textAnchor="middle" className="fill-slate-800 text-xl font-bold">
         {totalHours.toFixed(1)}
       </text>
-      <text x={cx} y={cy + 14} textAnchor="middle" className="fill-gray-500 text-[10px]">
+      <text x={cx} y={cy + 14} textAnchor="middle" className="fill-slate-500 text-[10px]">
         hours
       </text>
     </g>
@@ -43,7 +43,7 @@ export default function CategoryPieChart({ events }: CategoryPieChartProps) {
 
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-gray-500 text-sm">
+      <div className="flex items-center justify-center h-48 text-slate-500 text-sm">
         No data yet
       </div>
     );
@@ -71,19 +71,20 @@ export default function CategoryPieChart({ events }: CategoryPieChartProps) {
           <Tooltip
             formatter={(value: number) => [`${value.toFixed(2)}h`, "Hours"]}
             contentStyle={{
-              backgroundColor: "rgba(26, 26, 46, 0.95)",
-              border: "1px solid #2a2a40",
+              backgroundColor: "rgba(252, 248, 240, 0.95)",
+              border: "1px solid #d7d0c3",
               borderRadius: "8px",
-              color: "#fff",
+              color: "#1f2937",
               fontSize: "12px",
               backdropFilter: "blur(8px)",
+              boxShadow: "0 10px 24px rgba(24, 33, 52, 0.12)",
             }}
           />
         </PieChart>
       </ResponsiveContainer>
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
         {data.map((d) => (
-          <div key={d.category} className="flex items-center gap-1.5 text-xs text-gray-400">
+          <div key={d.category} className="flex items-center gap-1.5 text-xs text-slate-600">
             <span
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: d.color }}
