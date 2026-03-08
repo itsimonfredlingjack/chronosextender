@@ -155,11 +155,11 @@ pub fn run() {
             commands::cancel_assistant_stream,
         ])
         .on_window_event(|window, event| {
-            // Close button hides main window to tray instead of quitting
             if window.label() == "main" {
                 if let WindowEvent::CloseRequested { api, .. } = event {
+                    // On macOS, red close should terminate the full app process.
                     api.prevent_close();
-                    window.hide().ok();
+                    window.app_handle().exit(0);
                 }
             }
         })

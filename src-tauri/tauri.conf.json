@@ -19,7 +19,7 @@
         "minWidth": 480,
         "minHeight": 400,
         "visible": true,
-        "decorations": false,
+        "decorations": true,
         "url": "/dashboard"
       },
       {

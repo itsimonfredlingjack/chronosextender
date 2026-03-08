@@ -156,7 +156,7 @@ export default function Settings() {
 
   if (!settings) {
     return (
-      <div className="p-6 space-y-6 max-w-3xl animate-pulse">
+      <div className="p-4 sm:p-6 space-y-6 max-w-3xl animate-pulse">
         <div className="h-7 w-24 bg-[#1a1a2e] rounded" />
         {[1, 2, 3].map((i) => (
           <div key={i} className="bg-[#1a1a2e] rounded-lg p-5 border border-[#2a2a40] space-y-3">
@@ -170,14 +170,14 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-6 space-y-5 max-w-3xl overflow-auto h-full">
+    <div className="p-4 sm:p-6 space-y-5 max-w-3xl overflow-auto h-full">
       <h2 className="text-xl font-semibold text-white animate-slide-up">Settings</h2>
 
       {/* Projects — always visible */}
       <Section title="Projects">
         <div className="space-y-2 mb-3">
           {projects.map((project) => (
-            <div key={project.id} className="flex items-center gap-3 py-1.5">
+            <div key={project.id} className="flex flex-wrap items-center gap-2 sm:gap-3 py-1.5">
               <div
                 className="w-3 h-3 rounded-full shrink-0"
                 style={{ backgroundColor: project.color }}
@@ -197,7 +197,7 @@ export default function Settings() {
         </div>
         {showProjectForm ? (
           <form onSubmit={handleSaveProject} className="space-y-2 border-t border-[#2a2a40] pt-3">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input
                 value={projectForm.name}
                 onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })}
@@ -240,7 +240,7 @@ export default function Settings() {
             rules.map((rule) => (
               <div
                 key={rule.id}
-                className="flex items-center gap-3 py-2 border-b border-[#2a2a40] last:border-0"
+                className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 py-2 border-b border-[#2a2a40] last:border-0"
               >
                 <span className="text-xs text-gray-400 w-8">#{rule.priority}</span>
                 <span className="text-xs px-2 py-0.5 bg-[#12121e] rounded text-gray-300">
@@ -313,7 +313,7 @@ export default function Settings() {
                 }
                 className="input-field w-full"
               />
-              <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">
                     Tier 1 Model (Always-on)
@@ -363,7 +363,7 @@ export default function Settings() {
                 />
                 <label className="text-sm text-gray-300">Enable tracking</label>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">
                     Dedup Threshold (seconds)
@@ -529,7 +529,7 @@ export default function Settings() {
                 </p>
               </div>
 
-              <div className="mt-4 flex items-center justify-between gap-3">
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <p className="text-xs text-gray-500">
                   Sync uploads daily summaries, project rollups, and flow sessions only.
                 </p>
@@ -559,7 +559,7 @@ export default function Settings() {
                 <label className="text-sm text-gray-300">Enable in-app assistant</label>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Provider</label>
                   <select
@@ -704,7 +704,7 @@ export default function Settings() {
                     />
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={handleSaveAssistantKey}
                       disabled={savingAssistantKey || !assistantApiKey.trim()}
@@ -728,11 +728,11 @@ export default function Settings() {
       </div>
 
       {/* Save button */}
-      <div className="flex justify-end pt-4 pb-6">
+      <div className="flex justify-stretch sm:justify-end pt-4 pb-6">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="btn-primary"
+          className="btn-primary w-full sm:w-auto"
         >
           {saving ? "Saving..." : "Save Settings"}
         </button>

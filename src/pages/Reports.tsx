@@ -106,9 +106,9 @@ export default function Reports() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-4 animate-pulse">
+      <div className="p-4 sm:p-6 space-y-4 animate-pulse">
         <div className="h-6 w-24 bg-[#1a1a2e] rounded" />
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-[#1a1a2e] rounded-xl p-4 border border-[#2a2a40] space-y-2">
               <div className="h-6 w-16 bg-[#22223a] rounded" />
@@ -122,10 +122,10 @@ export default function Reports() {
   }
 
   return (
-    <div className="p-6 space-y-5 overflow-auto h-full">
+    <div className="p-4 sm:p-6 space-y-5 overflow-auto h-full">
       {/* Header with date navigation */}
-      <div className="flex items-center justify-between animate-slide-up">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between animate-slide-up">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <h2 className="text-xl font-semibold text-white">Reports</h2>
           <div className="flex items-center gap-1 bg-[#12121e] rounded-lg p-0.5 border border-[#2a2a40]/50">
             <button
@@ -152,7 +152,7 @@ export default function Reports() {
             </button>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 sm:justify-end">
           <button onClick={exportCSV} className="btn-ghost text-xs">
             Export CSV
           </button>
@@ -181,7 +181,7 @@ export default function Reports() {
       ) : (
         <>
           {/* Summary row */}
-          <div className="grid grid-cols-4 gap-3 animate-slide-up" style={{ animationDelay: "0.05s" }}>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-slide-up" style={{ animationDelay: "0.05s" }}>
             {/* Hero card — Total */}
             <div className="stat-card-hero">
               <p className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent tabular-nums">
@@ -222,8 +222,8 @@ export default function Reports() {
           </div>
 
           {/* Category breakdown + pie */}
-          <div className="grid grid-cols-5 gap-3 animate-slide-up" style={{ animationDelay: "0.1s" }}>
-            <div className="col-span-3 bg-[#1a1a2e] rounded-xl p-4 border border-[#2a2a40]">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+            <div className="lg:col-span-3 bg-[#1a1a2e] rounded-xl p-4 border border-[#2a2a40]">
               <h3 className="text-xs font-medium text-gray-400 mb-3">
                 Categories
               </h3>
@@ -237,7 +237,7 @@ export default function Reports() {
                     const pct = ((seconds / totalSeconds) * 100).toFixed(0);
                     return (
                       <div key={category} className="flex items-center gap-2">
-                        <span className="text-xs w-20 text-gray-400 truncate">
+                        <span className="text-xs w-16 sm:w-20 text-gray-400 truncate">
                           {CATEGORY_LABELS[category as Category] || category}
                         </span>
                         <div className="flex-1 h-2 bg-[#12121e] rounded-full overflow-hidden">
@@ -253,7 +253,7 @@ export default function Reports() {
                         <span className="text-[10px] text-gray-500 w-8 text-right tabular-nums font-mono">
                           {pct}%
                         </span>
-                        <span className="text-xs text-gray-500 w-12 text-right tabular-nums">
+                        <span className="text-xs text-gray-500 w-10 sm:w-12 text-right tabular-nums">
                           {formatHours(seconds)}
                         </span>
                       </div>
@@ -262,7 +262,7 @@ export default function Reports() {
               </div>
             </div>
 
-            <div className="col-span-2 bg-[#1a1a2e] rounded-xl p-3 border border-[#2a2a40]">
+            <div className="lg:col-span-2 bg-[#1a1a2e] rounded-xl p-3 border border-[#2a2a40]">
               <CategoryPieChart events={events} />
             </div>
           </div>
@@ -278,7 +278,7 @@ export default function Reports() {
                   .sort((a, b) => b.hours - a.hours)
                   .map((proj) => (
                     <div key={proj.project} className="flex items-center gap-2">
-                      <span className="text-xs w-24 text-gray-300 truncate">
+                      <span className="text-xs w-20 sm:w-24 text-gray-300 truncate">
                         {proj.project}
                       </span>
                       <div className="flex-1 h-2 bg-[#12121e] rounded-full overflow-hidden">

@@ -82,8 +82,8 @@ export default function Layout() {
       {/* Mesh gradient background */}
       <div className="mesh-bg" />
 
-      {/* Left sidebar — pt-8 clears macOS traffic lights */}
-      <aside data-tauri-drag-region className="relative z-10 w-14 flex flex-col items-center pt-8 pb-3 border-r border-border/50 bg-base/80 backdrop-blur-sm shrink-0">
+      {/* Left sidebar */}
+      <aside className="relative z-10 w-14 flex flex-col items-center pt-3 pb-3 border-r border-border/50 bg-base/80 backdrop-blur-sm shrink-0">
         {/* Logo */}
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center mb-4">
           <span className="text-sm font-semibold text-indigo-400">C</span>
@@ -134,8 +134,7 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* Content — pt-7 clears the drag region */}
-      <main data-tauri-drag-region className="flex-1 overflow-hidden relative z-10 pt-7">
+      <main className="flex-1 overflow-hidden relative z-10">
         <Outlet />
       </main>
 
