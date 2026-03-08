@@ -84,13 +84,8 @@ export default function Layout() {
 
       {/* Left sidebar */}
       <aside className="relative z-10 w-14 flex flex-col items-center pt-3 pb-3 border-r border-border/50 bg-base/80 backdrop-blur-sm shrink-0">
-        {/* Logo */}
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center mb-4">
-          <span className="text-sm font-semibold text-indigo-400">C</span>
-        </div>
-
         {/* Nav links */}
-        <nav className="flex flex-col items-center gap-1.5 flex-1">
+        <nav className="flex flex-col items-center gap-1.5 flex-1 mt-1">
           {tabs.map((tab) => {
             const isActive =
               tab.end
@@ -114,12 +109,17 @@ export default function Layout() {
         {/* Bottom actions */}
         <div className="flex flex-col items-center gap-2 mt-auto">
           <button
-            onClick={() => { setCmdOpen(false); setAssistantOpen(true); }}
+            onClick={() => {
+              setCmdOpen(false);
+              setStatusOpen(false);
+              setAssistantOpen(true);
+            }}
             className="sidebar-link"
             title="AI Assistant (⌘K)"
+            aria-label="Open AI Assistant"
           >
-            <span className="text-sm">✦</span>
-            <span className="sidebar-tooltip">AI · ⌘K</span>
+            <span className="text-[10px] font-semibold tracking-[0.12em] text-indigo-700 font-data">AI</span>
+            <span className="sidebar-tooltip">AI Assistant · ⌘K</span>
           </button>
 
           <StatusPopover

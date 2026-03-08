@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from "react";
+import { useMemo } from "react";
 
 import CategoryRace from "../components/CategoryRace";
 import MissionTimeline from "../components/MissionTimeline";
@@ -48,24 +48,10 @@ function ActivePulse({
   return (
     <div className="flex flex-col items-center gap-2 select-none">
       <div className="flex items-center gap-2.5">
-        <div className="relative">
-          <div
-            className={`w-2.5 h-2.5 rounded-full ${trackingActive ? "" : "bg-slate-400"}`}
-            style={trackingActive ? { backgroundColor: color } : undefined}
-          />
-          {trackingActive && (
-            <>
-              <div
-                className="absolute inset-0 rounded-full animate-ping opacity-30"
-                style={{ backgroundColor: color }}
-              />
-              <div
-                className="absolute -inset-1.5 rounded-full animate-ring-pulse"
-                style={{ border: `1.5px solid ${color}`, opacity: 0.2 }}
-              />
-            </>
-          )}
-        </div>
+        <div
+          className={`w-2.5 h-2.5 rounded-full ${trackingActive ? "" : "bg-slate-400"}`}
+          style={trackingActive ? { backgroundColor: color } : undefined}
+        />
         <span
           className={`text-xs font-semibold tracking-[0.12em] uppercase ${trackingActive ? "" : "text-slate-500"}`}
           style={trackingActive ? { color } : undefined}
@@ -126,16 +112,13 @@ function IdleSummary() {
     <div className="flex flex-col items-center gap-4 select-none max-w-sm text-center">
       <div className="relative w-24 h-24 mb-2">
         <div
-          className="absolute inset-0 rounded-full border border-indigo-500/10 animate-ring-pulse"
-          style={{ animationDelay: "0s" }}
+          className="absolute inset-0 rounded-full border border-indigo-500/10"
         />
         <div
-          className="absolute inset-2 rounded-full border border-blue-500/15 animate-ring-pulse"
-          style={{ animationDelay: "1s" }}
+          className="absolute inset-2 rounded-full border border-blue-500/15"
         />
         <div
-          className="absolute inset-4 rounded-full border border-indigo-400/20 animate-ring-pulse"
-          style={{ animationDelay: "2s" }}
+          className="absolute inset-4 rounded-full border border-indigo-400/20"
         />
         <div className="absolute inset-5 rounded-full bg-gradient-to-br from-indigo-500/18 to-blue-500/18 border border-indigo-400/20 flex items-center justify-center backdrop-blur-sm">
           <span className="text-xl text-indigo-600/80 font-display">C</span>
@@ -221,9 +204,6 @@ export default function Dashboard() {
   );
 
   const trackingIsActive = trackingActive ?? true;
-  const categoryColor = currentSession
-    ? CATEGORY_COLORS[currentSession.category] || CATEGORY_COLORS.unknown
-    : null;
 
   const handleToggle = async () => {
     const next = await api.toggleTracking();
@@ -243,13 +223,6 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-shell h-full flex flex-col relative overflow-hidden">
-      {categoryColor && trackingIsActive && (
-        <div
-          className="pulse-bg transition-all duration-[3000ms]"
-          style={{ "--pulse-color": categoryColor } as CSSProperties}
-        />
-      )}
-
       <div className="dashboard-top-strip relative z-10 px-3 sm:px-6 pt-2 sm:pt-4 animate-slide-up" style={{ animationDelay: "0s" }}>
         <MissionTimeline
           visualState={visualState}
