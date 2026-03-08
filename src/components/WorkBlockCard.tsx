@@ -47,7 +47,7 @@ export default function WorkBlockCard({ block, onApproved }: Props) {
       );
       onApproved(block.id);
     } catch (e) {
-      console.error("Failed to approve block:", e);
+      console.error("Failed to confirm block:", e);
     } finally {
       setApproving(false);
     }
@@ -108,7 +108,7 @@ export default function WorkBlockCard({ block, onApproved }: Props) {
           disabled={approving}
           className="flex-1 btn-primary text-xs focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-card)]"
         >
-          {approving ? "Saving..." : "Approve"}
+          {approving ? "Saving..." : "Looks right"}
         </button>
 
         {editing ? (
@@ -143,10 +143,16 @@ export default function WorkBlockCard({ block, onApproved }: Props) {
             onClick={() => setEditing(true)}
             className="btn-ghost text-xs"
           >
-            Edit
+            Adjust
           </button>
         )}
       </div>
+
+      {!editing && (
+        <p className="mt-2 text-[11px] text-slate-500">
+          Looks right keeps the suggested label. Adjust lets you choose a different category first.
+        </p>
+      )}
     </div>
   );
 }

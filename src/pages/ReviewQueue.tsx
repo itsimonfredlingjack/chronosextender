@@ -3,26 +3,42 @@ import { listen } from "@tauri-apps/api/event";
 import PageTopStrip from "../components/PageTopStrip";
 import WorkBlockCard from "../components/WorkBlockCard";
 import { useCommandDeckState } from "../hooks/useCommandDeckState";
-import { useEvents } from "../hooks/useEvents";
 import { api } from "../lib/tauri";
-import { aggregateToWorkBlocks } from "../lib/workblocks";
+import type { Event } from "../lib/types";
+import { aggregateToReviewWorkBlocks } from "../lib/workblocks";
 
 export default function ReviewQueue() {
-  const { events, loading, refresh } = useEvents();
   const { visualState, statusLabel } = useCommandDeckState();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
   const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set());
   const [reclassifying, setReclassifying] = useState(false);
 
+  const refresh = useCallback(async () => {
+    try {
+      const pendingEvents = await api.getPendingEvents();
+      setEvents(pendingEvents);
+    } catch (e) {
+      console.error("Failed to load pending events:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
   useEffect(() => {
     const unlisten = listen("events-changed", () => {
-      refresh();
+      void refresh();
     });
     return () => {
       unlisten.then((fn) => fn());
     };
   }, [refresh]);
 
-  const blocks = aggregateToWorkBlocks(events);
+  const blocks = aggregateToReviewWorkBlocks(events);
   const pendingBlocks = blocks.filter((b) => !approvedIds.has(b.id));
 
   const handleApproved = useCallback((blockId: string) => {
@@ -65,7 +81,7 @@ export default function ReviewQueue() {
         title="Review"
         subtitle={
           pendingBlocks.length === 0
-            ? "All blocks confirmed"
+            ? "Nothing needs review"
             : `${pendingBlocks.length} work block${pendingBlocks.length !== 1 ? "s" : ""} to review`
         }
         visualState={visualState}
@@ -79,12 +95,12 @@ export default function ReviewQueue() {
             {reclassifying ? (
               <>
                 <span className="w-3 h-3 border border-slate-500 border-t-transparent rounded-full animate-spin" />
-                AI processing...
+                AI is rechecking...
               </>
             ) : (
               <>
                 <span className="text-indigo-400">✦</span>
-                Reclassify
+                Try AI Again
               </>
             )}
           </button>
@@ -105,7 +121,7 @@ export default function ReviewQueue() {
           </div>
           <p className="text-base font-medium text-slate-700">All clear</p>
           <p className="text-xs text-slate-500 mt-1.5 max-w-xs">
-            Work blocks will appear here as you use your computer. Chronos groups related activity for easy review.
+            New uncertain work blocks will appear here as you use your computer. Chronos only shows items that still need review.
           </p>
         </div>
       ) : (

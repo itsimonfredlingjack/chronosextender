@@ -1,11 +1,16 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import type { CloudSyncStatus } from "../lib/types";
 
 interface Props {
   ollamaConnected: boolean;
+  aiModelLabel: string | null;
+  assistantValue: string;
+  assistantDotClassName: string;
   trackingActive: boolean;
   pendingCount: number;
+  cloudStatus: CloudSyncStatus | null;
   onToggleTracking: () => void;
   onClose: () => void;
   isOpen: boolean;
@@ -31,8 +36,12 @@ function PlayIcon() {
 
 export default function StatusPopover({
   ollamaConnected,
+  aiModelLabel,
+  assistantValue,
+  assistantDotClassName,
   trackingActive,
   pendingCount,
+  cloudStatus,
   onToggleTracking,
   onClose,
   isOpen,
@@ -59,10 +68,60 @@ export default function StatusPopover({
     health === "red"
       ? "Offline"
       : pendingCount > 0
-        ? `${pendingCount} pending`
+        ? `${pendingCount} to review`
         : !trackingActive
           ? "Paused"
           : "All good";
+
+  const aiLabel = aiModelLabel?.trim() ? aiModelLabel : "Local AI";
+
+  const syncState = (() => {
+    if (!cloudStatus) {
+      return {
+        dotClassName: "bg-slate-400",
+        textClassName: "text-slate-500",
+        value: "Checking",
+      };
+    }
+
+    if (!cloudStatus.enabled) {
+      return {
+        dotClassName: "bg-slate-400",
+        textClassName: "text-slate-500",
+        value: "Off",
+      };
+    }
+
+    if (!cloudStatus.configured) {
+      return {
+        dotClassName: "bg-amber-500",
+        textClassName: "text-amber-600",
+        value: "Needs setup",
+      };
+    }
+
+    if (cloudStatus.has_local_activity && !cloudStatus.last_sync_at) {
+      return {
+        dotClassName: "bg-amber-500",
+        textClassName: "text-amber-600",
+        value: "Not synced",
+      };
+    }
+
+    if (cloudStatus.local_summary_days === 0) {
+      return {
+        dotClassName: "bg-amber-500",
+        textClassName: "text-amber-600",
+        value: "No summaries",
+      };
+    }
+
+    return {
+      dotClassName: "bg-emerald-500",
+      textClassName: "text-emerald-600",
+      value: "Healthy",
+    };
+  })();
 
   // Close on outside click
   useEffect(() => {
@@ -114,12 +173,25 @@ export default function StatusPopover({
               ref={panelRef}
               className="pointer-events-auto absolute left-[4.15rem] bottom-3 w-56 bg-[#fcfaf5] border border-[#d7d0c3] rounded-xl shadow-[0_18px_42px_rgba(30,41,59,0.22)] overflow-hidden"
             >
-              {/* Ollama row */}
+              {/* Assistant row */}
+              <button
+                onClick={() => { navigate("/settings"); onClose(); }}
+                className="w-full flex items-center gap-3 px-4 py-3 border-b border-[var(--color-border)] hover:bg-[var(--color-elevated)] transition-colors text-left"
+              >
+                <span className={`w-2 h-2 rounded-full shrink-0 ${assistantDotClassName}`} />
+                <span className="text-xs text-slate-700 flex-1">Assistant</span>
+                <span className="text-xs text-slate-600">
+                  {assistantValue}
+                </span>
+                <span className="text-slate-500 text-xs">›</span>
+              </button>
+
+              {/* AI engine row */}
               <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--color-border)]">
                 <span className={`w-2 h-2 rounded-full shrink-0 ${ollamaConnected ? "bg-emerald-500" : "bg-red-500"}`} />
-                <span className="text-xs text-slate-700 flex-1">Ollama</span>
+                <span className="text-xs text-slate-700 flex-1">Local AI</span>
                 <span className={`text-xs ${ollamaConnected ? "text-emerald-600" : "text-red-600"}`}>
-                  {ollamaConnected ? "Connected" : "Offline"}
+                  {ollamaConnected ? aiLabel : "Offline"}
                 </span>
               </div>
 
@@ -139,13 +211,26 @@ export default function StatusPopover({
                 </button>
               </div>
 
+              {/* Sync row */}
+              <button
+                onClick={() => { navigate("/settings"); onClose(); }}
+                className="w-full flex items-center gap-3 px-4 py-3 border-b border-[var(--color-border)] hover:bg-[var(--color-elevated)] transition-colors text-left"
+              >
+                <span className={`w-2 h-2 rounded-full shrink-0 ${syncState.dotClassName}`} />
+                <span className="text-xs text-slate-700 flex-1">Sync</span>
+                <span className={`text-xs ${syncState.textClassName}`}>
+                  {syncState.value}
+                </span>
+                <span className="text-slate-500 text-xs">›</span>
+              </button>
+
               {/* Review row */}
               <button
                 onClick={() => { navigate("/review"); onClose(); }}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--color-elevated)] transition-colors text-left"
               >
                 <span className={`w-2 h-2 rounded-full shrink-0 ${pendingCount > 0 ? "bg-amber-500" : "bg-slate-400"}`} />
-                <span className="text-xs text-slate-700 flex-1">Review</span>
+                <span className="text-xs text-slate-700 flex-1">Review Queue</span>
                 <span className={`text-xs ${pendingCount > 0 ? "text-amber-600" : "text-slate-500"}`}>
                   {pendingCount > 0 ? `${pendingCount} items` : "Clear"}
                 </span>

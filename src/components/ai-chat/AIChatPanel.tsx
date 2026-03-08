@@ -1,32 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import { listen } from "@tauri-apps/api/event";
 import { useNavigate } from "react-router-dom";
-import { api } from "../../lib/tauri";
 import { useAppContext } from "../../hooks/useAppContext";
+import {
+  getAssistantStatusLabel,
+  useAssistantStatus,
+} from "../../hooks/useAssistantStatus";
 import { useAIChat } from "../../hooks/useAIChat";
 import { ASSISTANT_MODEL_OPTIONS } from "../../config/ai-config";
 import { ChatHeader } from "./ChatHeader";
 import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
 import { getPresetPrompts } from "./presetPrompts";
-import type { AssistantSecretStatus, AssistantSettings, AIProvider } from "../../types/ai-types";
-
-function getStatusLabel(
-  settings: AssistantSettings | null,
-  secretStatus: AssistantSecretStatus | null
-): string {
-  if (!settings?.enabled) {
-    return "Disabled in Settings";
-  }
-  if (settings.provider !== "local" && !secretStatus?.configured) {
-    return `Waiting for a ${settings.provider} API key`;
-  }
-  if (settings.provider === "local") {
-    return "Connected to local HTTP provider";
-  }
-  return `${settings.provider} key stored securely`;
-}
 
 export function AIChatPanel({
   isOpen,
@@ -37,50 +22,8 @@ export function AIChatPanel({
 }) {
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [settings, setSettings] = useState<AssistantSettings | null>(null);
-  const [secretStatus, setSecretStatus] = useState<AssistantSecretStatus | null>(null);
-  const [loadingSettings, setLoadingSettings] = useState(true);
+  const { settings, secretStatus, loading: loadingSettings } = useAssistantStatus();
   const { currentView, contextXml, loading: contextLoading } = useAppContext();
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadSettings = async () => {
-      try {
-        const appSettings = await api.getSettings();
-        if (!mounted) return;
-        setSettings(appSettings.assistant);
-
-        const nextSecretStatus =
-          appSettings.assistant.provider === "local"
-            ? ({ provider: "local", configured: true } satisfies {
-                provider: AIProvider;
-                configured: boolean;
-              })
-            : await api.getAssistantSecretStatus(appSettings.assistant.provider);
-
-        if (mounted) {
-          setSecretStatus(nextSecretStatus);
-          setLoadingSettings(false);
-        }
-      } catch (error) {
-        console.error("Failed to load assistant settings:", error);
-        if (mounted) {
-          setLoadingSettings(false);
-        }
-      }
-    };
-
-    loadSettings();
-    const unlistenSettings = listen("settings-updated", loadSettings);
-    const unlistenSecrets = listen("assistant-secret-status-changed", loadSettings);
-
-    return () => {
-      mounted = false;
-      unlistenSettings.then((fn) => fn());
-      unlistenSecrets.then((fn) => fn());
-    };
-  }, []);
 
   const chat = useAIChat({
     contextXml,
@@ -127,7 +70,7 @@ export function AIChatPanel({
         <ChatHeader
           currentView={currentView}
           modelLabel={modelLabel}
-          statusLabel={getStatusLabel(settings, secretStatus)}
+          statusLabel={getAssistantStatusLabel(settings, secretStatus)}
           onOpenSettings={() => {
             navigate("/settings");
             onClose();

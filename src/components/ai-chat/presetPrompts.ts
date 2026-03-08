@@ -18,7 +18,7 @@ const REPORTS_PRESETS: PresetPrompt[] = [
 ];
 
 const REVIEW_PRESETS: PresetPrompt[] = [
-  { label: "Pending", prompt: "What should I review or classify first?" },
+  { label: "Review", prompt: "What should I look at first in review?" },
   { label: "Today", prompt: "What did I work on today?" },
   { label: "Projects", prompt: "Which project has the most unclear time right now?" },
   { label: "Flow", prompt: "Did interruptions hurt my flow today?" },

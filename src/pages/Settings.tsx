@@ -21,8 +21,12 @@ export default function Settings() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [saving, setSaving] = useState(false);
   const [syncingCloud, setSyncingCloud] = useState(false);
+  const [syncingCloudFull, setSyncingCloudFull] = useState(false);
+  const [generatingSummaryAndSyncing, setGeneratingSummaryAndSyncing] = useState(false);
   const [savingAssistantKey, setSavingAssistantKey] = useState(false);
   const [cloudStatus, setCloudStatus] = useState<CloudSyncStatusType | null>(null);
+  const [cloudSyncMessage, setCloudSyncMessage] = useState<string | null>(null);
+  const [cloudSyncError, setCloudSyncError] = useState<string | null>(null);
   const [assistantSecretStatus, setAssistantSecretStatus] = useState<AssistantSecretStatus | null>(null);
   const [assistantApiKey, setAssistantApiKey] = useState("");
   const [showProjectForm, setShowProjectForm] = useState(false);
@@ -38,6 +42,30 @@ export default function Settings() {
 
   const loadProjects = () => {
     api.getProjects().then(setProjects).catch(console.error);
+  };
+
+  const formatLocalDate = (value: Date) => {
+    const year = value.getFullYear();
+    const month = `${value.getMonth() + 1}`.padStart(2, "0");
+    const day = `${value.getDate()}`.padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const refreshCloudStatus = async () => {
+    const nextStatus = await api.getCloudSyncStatus();
+    setCloudStatus(nextStatus);
+    setSettings((prev) =>
+      prev
+        ? {
+          ...prev,
+          cloud: {
+            ...prev.cloud,
+            last_sync_at: nextStatus.last_sync_at,
+          },
+        }
+        : prev
+    );
+    return nextStatus;
   };
 
   useEffect(() => {
@@ -79,8 +107,8 @@ export default function Settings() {
     setSaving(true);
     try {
       await api.updateSettings(settings);
-      const nextStatus = await api.getCloudSyncStatus();
-      setCloudStatus(nextStatus);
+      await refreshCloudStatus();
+      setCloudSyncError(null);
     } catch (e) {
       console.error("Failed to save settings:", e);
     } finally {
@@ -88,27 +116,55 @@ export default function Settings() {
     }
   };
 
-  const handleCloudSync = async () => {
-    setSyncingCloud(true);
+  const handleCloudSync = async (mode: "recent" | "full" = "recent") => {
+    if (mode === "full") {
+      setSyncingCloudFull(true);
+    } else {
+      setSyncingCloud(true);
+    }
+    setCloudSyncError(null);
+    setCloudSyncMessage(null);
     try {
-      await api.syncCloudNow();
-      const nextStatus = await api.getCloudSyncStatus();
-      setCloudStatus(nextStatus);
-      setSettings((prev) =>
-        prev
-          ? {
-            ...prev,
-            cloud: {
-              ...prev.cloud,
-              last_sync_at: nextStatus.last_sync_at,
-            },
-          }
-          : prev
-      );
+      const report =
+        mode === "full" ? await api.syncCloudFullResync() : await api.syncCloudNow();
+      await refreshCloudStatus();
+      if (report.failures.length > 0) {
+        setCloudSyncError(report.failures.join(" • "));
+      } else {
+        setCloudSyncMessage(
+          `${
+            mode === "full" ? "Full resync completed" : "Sync completed"
+          }: ${report.synced_dates.length} day(s), ${report.uploaded_summaries} summaries, ${report.uploaded_project_rollups} project rollups, ${report.uploaded_flow_sessions} flow sessions.`
+        );
+      }
     } catch (e) {
       console.error("Cloud sync failed:", e);
+      setCloudSyncError(e instanceof Error ? e.message : "Cloud sync failed.");
     } finally {
-      setSyncingCloud(false);
+      if (mode === "full") {
+        setSyncingCloudFull(false);
+      } else {
+        setSyncingCloud(false);
+      }
+    }
+  };
+
+  const handleGenerateTodaySummaryAndSync = async () => {
+    const today = formatLocalDate(new Date());
+    setGeneratingSummaryAndSyncing(true);
+    setCloudSyncError(null);
+    setCloudSyncMessage(null);
+    try {
+      await api.triggerDailySummary(today);
+      await refreshCloudStatus();
+      setCloudSyncMessage(`Generated daily summary for ${today} and synced that day.`);
+    } catch (e) {
+      console.error("Generate summary and sync failed:", e);
+      setCloudSyncError(
+        e instanceof Error ? e.message : "Generating today's summary and sync failed."
+      );
+    } finally {
+      setGeneratingSummaryAndSyncing(false);
     }
   };
 
@@ -535,20 +591,83 @@ export default function Settings() {
                 <p className="text-xs text-slate-500">
                   Last sync: {settings.cloud.last_sync_at || "Never"}
                 </p>
+                <p className="text-xs text-slate-500">
+                  Local data: {cloudStatus?.local_event_days || 0} event day(s), {cloudStatus?.local_summary_days || 0} summary day(s), {cloudStatus?.local_flow_days || 0} flow day(s)
+                </p>
               </div>
+
+              {cloudStatus?.issues && cloudStatus.issues.length > 0 ? (
+                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-xs font-medium text-amber-900">Sync diagnostics</p>
+                  <div className="mt-2 space-y-1">
+                    {cloudStatus.issues.map((issue) => (
+                      <p key={issue} className="text-xs text-amber-800">
+                        {issue}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {cloudSyncMessage ? (
+                <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
+                  {cloudSyncMessage}
+                </div>
+              ) : null}
+
+              {cloudSyncError ? (
+                <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+                  {cloudSyncError}
+                </div>
+              ) : null}
 
               <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <p className="text-xs text-slate-500">
                   Sync uploads daily summaries, project rollups, and flow sessions only.
                 </p>
-                <button
-                  onClick={handleCloudSync}
-                  disabled={syncingCloud || !settings.cloud.enabled}
-                  className="btn-ghost text-xs"
-                >
-                  {syncingCloud ? "Syncing..." : "Sync Now"}
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={handleGenerateTodaySummaryAndSync}
+                    disabled={
+                      generatingSummaryAndSyncing ||
+                      syncingCloud ||
+                      syncingCloudFull
+                    }
+                    className="btn-ghost text-xs"
+                    title="Generate today's local summary, then sync that date to the hosted layer."
+                  >
+                    {generatingSummaryAndSyncing ? "Generating..." : "Generate Today + Sync"}
+                  </button>
+                  <button
+                    onClick={() => handleCloudSync("recent")}
+                    disabled={
+                      generatingSummaryAndSyncing ||
+                      syncingCloud ||
+                      syncingCloudFull ||
+                      !settings.cloud.enabled
+                    }
+                    className="btn-ghost text-xs"
+                  >
+                    {syncingCloud ? "Syncing..." : "Sync Now"}
+                  </button>
+                  <button
+                    onClick={() => handleCloudSync("full")}
+                    disabled={
+                      generatingSummaryAndSyncing ||
+                      syncingCloud ||
+                      syncingCloudFull ||
+                      !settings.cloud.enabled
+                    }
+                    className="btn-ghost text-xs"
+                    title="Re-upload every local day with activity, summaries, or flow sessions."
+                  >
+                    {syncingCloudFull ? "Backfilling..." : "Full Resync"}
+                  </button>
+                </div>
               </div>
+              <p className="text-xs text-slate-500">
+                Full Resync re-uploads all local days to rebuild the hosted layer after a reset or migration.
+              </p>
             </Section>
 
             <Section title="Embedded Assistant">

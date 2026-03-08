@@ -76,7 +76,7 @@ export default function ActionCenter() {
       <div className="w-3/5 p-6 space-y-6 overflow-auto">
         <div className="animate-[fade-in_0.3s_ease-out_backwards]" style={{ animationDelay: "0s" }}>
           <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Action Center</h2>
-          <p className="text-sm text-slate-600">Insights & unconfirmed time</p>
+          <p className="text-sm text-slate-600">Insights and time that still needs a quick look</p>
         </div>
 
         <div className="animate-[fade-in_0.3s_ease-out_backwards]" style={{ animationDelay: "0.05s" }}>
@@ -98,7 +98,7 @@ export default function ActionCenter() {
           <div>
             <h3 className="text-lg font-medium text-[var(--color-text-primary)]">Action Feed</h3>
             <p className="text-xs text-slate-600">
-              {pendingEvents.length} pending event{pendingEvents.length !== 1 ? "s" : ""}
+              {pendingEvents.length} event{pendingEvents.length !== 1 ? "s" : ""} to review
             </p>
           </div>
           <button onClick={loadPending} className="btn-ghost text-xs">
@@ -116,7 +116,7 @@ export default function ActionCenter() {
           <div className="text-center py-12">
             <p className="text-xl mb-2 text-slate-500">All caught up!</p>
             <p className="text-xs text-slate-600 mt-1">
-              No pending events to review
+              Nothing needs review right now
             </p>
           </div>
         ) : (

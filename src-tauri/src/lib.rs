@@ -147,6 +147,7 @@ pub fn run() {
             commands::log_time_nlp,
             commands::get_daily_summary,
             commands::sync_cloud_now,
+            commands::sync_cloud_full_resync,
             commands::get_assistant_context_snapshot,
             commands::get_assistant_secret_status,
             commands::set_assistant_api_key,
