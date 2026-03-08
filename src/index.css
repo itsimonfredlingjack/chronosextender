@@ -346,22 +346,6 @@ body.overlay-window {
 }
 
 /* —————————————————————————————————
-   Ambient category glow (Ambilight edge effect)
-   ————————————————————————————————— */
-
-.pulse-bg {
-  position: absolute;
-  inset: 0;
-  /* Top and bottom edge glows, leaving the center clean to prevent Tauri webview banding */
-  background:
-    radial-gradient(70% 30% at 50% 0%, var(--pulse-color) 0%, transparent 100%),
-    radial-gradient(70% 30% at 50% 100%, var(--pulse-color) 0%, transparent 100%);
-  opacity: 0.12;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* —————————————————————————————————
    Reusable form elements
    ————————————————————————————————— */
 
