@@ -3,7 +3,11 @@ import assert from "node:assert/strict";
 
 import worker from "../src/worker";
 import { isValidSyncToken, readBearerToken } from "../src/lib/auth";
-import { summariseFlowSessions, summariseProjectBreakdown } from "../src/lib/service";
+import {
+  pickLatestSyncedDate,
+  summariseFlowSessions,
+  summariseProjectBreakdown,
+} from "../src/lib/service";
 
 test("readBearerToken extracts a bearer token", () => {
   const request = new Request("https://chronos.example.com/sync", {
@@ -78,6 +82,14 @@ test("summariseProjectBreakdown sorts projects and computes totals", () => {
   assert.equal(breakdown.dailyTotals.length, 2);
 });
 
+test("pickLatestSyncedDate falls back to the most recent synced table date", () => {
+  assert.equal(
+    pickLatestSyncedDate([null, "2026-03-06", "2026-03-08"], "2026-03-09"),
+    "2026-03-08"
+  );
+  assert.equal(pickLatestSyncedDate([undefined, null], "2026-03-09"), "2026-03-09");
+});
+
 test("worker rejects sync requests with an invalid token", async () => {
   const response = await worker.fetch(
     new Request("https://chronos.example.com/sync/daily-summary", {
@@ -129,4 +141,27 @@ test("worker health endpoint returns owner-scoped service metadata", async () =>
   const payload = (await response.json()) as { mcp: string; ownerAccountId: string };
   assert.equal(payload.mcp, "/mcp");
   assert.equal(payload.ownerAccountId, "owner");
+});
+
+test("worker adds CORS headers to widget asset responses", async () => {
+  const response = await worker.fetch(
+    new Request("https://chronos.example.com/widget.js"),
+    {
+      CHRONOS_ACCOUNT_ID: "owner",
+      CHRONOS_APP_ORIGIN: "https://chronos-mcp.example.com",
+      ASSETS: {
+        fetch: async () =>
+          new Response("console.log('widget');", {
+            headers: {
+              "content-type": "text/javascript",
+            },
+          }),
+      } as unknown as Fetcher,
+      DB: {} as D1Database,
+    }
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("access-control-allow-origin"), "*");
+  assert.equal(response.headers.get("content-type"), "text/javascript");
 });

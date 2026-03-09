@@ -128,6 +128,18 @@ function addDays(date: string, amount: number): string {
   return formatDate(value);
 }
 
+export function pickLatestSyncedDate(
+  candidates: Array<string | null | undefined>,
+  fallbackDate: string
+): string {
+  const latest = candidates
+    .filter((candidate): candidate is string => typeof candidate === "string" && candidate.length > 0)
+    .sort()
+    .at(-1);
+
+  return latest ?? fallbackDate;
+}
+
 function resolveRange(
   period: WidgetPeriod,
   latestDate: string,
@@ -576,18 +588,44 @@ export async function getRecentSummaries(
   };
 }
 
-async function getLatestSummaryDate(env: Env, accountId: string): Promise<string> {
-  const row = await env.DB.prepare(
-    `SELECT date
-     FROM daily_summaries
-     WHERE account_id = ?
-     ORDER BY date DESC
-     LIMIT 1`
-  )
-    .bind(accountId)
-    .first<{ date: string }>();
+async function getLatestActivityDate(env: Env, accountId: string): Promise<string> {
+  const [summaryRow, projectRow, flowRow] = await Promise.all([
+    env.DB
+      .prepare(
+        `SELECT date
+         FROM daily_summaries
+         WHERE account_id = ?
+         ORDER BY date DESC
+         LIMIT 1`
+      )
+      .bind(accountId)
+      .first<{ date: string }>(),
+    env.DB
+      .prepare(
+        `SELECT date
+         FROM project_rollups
+         WHERE account_id = ?
+         ORDER BY date DESC
+         LIMIT 1`
+      )
+      .bind(accountId)
+      .first<{ date: string }>(),
+    env.DB
+      .prepare(
+        `SELECT date
+         FROM flow_sessions
+         WHERE account_id = ?
+         ORDER BY date DESC
+         LIMIT 1`
+      )
+      .bind(accountId)
+      .first<{ date: string }>(),
+  ]);
 
-  return row?.date ?? formatDate(new Date());
+  return pickLatestSyncedDate(
+    [summaryRow?.date, projectRow?.date, flowRow?.date],
+    formatDate(new Date())
+  );
 }
 
 async function getSummariesInRange(
@@ -622,7 +660,7 @@ export async function getReportWidgetData(
   startDate?: string,
   endDate?: string
 ): Promise<{ structuredContent: ReportWidgetStructuredContent; meta: ReportWidgetMeta }> {
-  const latestDate = await getLatestSummaryDate(env, accountId);
+  const latestDate = await getLatestActivityDate(env, accountId);
   const range = resolveRange(period, latestDate, startDate, endDate);
   const [breakdown, dayOverview, summaries] = await Promise.all([
     getProjectBreakdown(env, accountId, range.startDate, range.endDate),

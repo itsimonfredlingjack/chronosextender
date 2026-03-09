@@ -369,6 +369,6 @@ export default {
       return handleSyncRequest(request, env, url.pathname);
     }
 
-    return env.ASSETS.fetch(request);
+    return withCors(await env.ASSETS.fetch(request));
   },
 };
