@@ -122,6 +122,7 @@ pub fn run() {
             commands::get_today_events,
             commands::get_timeline,
             commands::get_pending_events,
+            commands::get_pending_manual_time_entries,
             commands::get_timesheet_day,
             commands::get_timesheet_range,
             commands::reclassify_event,

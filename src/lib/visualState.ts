@@ -80,7 +80,7 @@ export function getVisualStateLabel(
   input: UIVisualStateInput = {}
 ): string {
   if (state === "warning" && typeof input.pendingCount === "number" && input.pendingCount > 0) {
-    return `${input.pendingCount} item${input.pendingCount === 1 ? "" : "s"} need review`;
+    return `${input.pendingCount} item${input.pendingCount === 1 ? "" : "s"} need attention`;
   }
 
   return UI_VISUAL_STATE_META[state].label;

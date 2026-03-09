@@ -23,9 +23,9 @@ export function createNavActions(
   return [
     {
       id: "nav-dashboard",
-      label: "Go to Pulse",
+      label: "Go to Today",
       icon: "\u25C9",
-      keywords: ["dashboard", "home", "main", "pulse"],
+      keywords: ["dashboard", "home", "main", "today", "pulse"],
       execute: () => { navigate("/"); onClose(); },
     },
     {
@@ -39,8 +39,15 @@ export function createNavActions(
       id: "nav-timesheets",
       label: "Go to Timesheets",
       icon: "\u25A4",
-      keywords: ["timesheets", "reports", "summary", "analytics", "export", "time"],
+      keywords: ["timesheets", "approve", "export", "time", "week"],
       execute: () => { navigate("/timesheets"); onClose(); },
+    },
+    {
+      id: "nav-reports",
+      label: "Go to Reports",
+      icon: "\u25A5",
+      keywords: ["reports", "summary", "analytics", "insights", "daily"],
+      execute: () => { navigate("/reports"); onClose(); },
     },
     {
       id: "nav-settings",

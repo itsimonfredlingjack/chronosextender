@@ -5,11 +5,14 @@ import { api } from "../lib/tauri";
 import { buildAssistantContext } from "../lib/ai/context";
 import type { AssistantContextSnapshot } from "../types/ai-types";
 
-function getCurrentView(pathname: string): string {
+export function getCurrentView(pathname: string): string {
   if (pathname === "/" || pathname === "/dashboard") {
     return "dashboard";
   }
-  if (pathname.startsWith("/reports") || pathname.startsWith("/timesheets")) {
+  if (pathname.startsWith("/reports")) {
+    return "reports";
+  }
+  if (pathname.startsWith("/timesheets")) {
     return "timesheets";
   }
   return pathname.replace(/^\//, "") || "dashboard";

@@ -27,7 +27,7 @@ function makeEvent(overrides: Partial<Event>): Event {
   };
 }
 
-test("isEventPendingReview matches backend pending semantics", () => {
+test("isEventPendingReview matches unresolved review semantics", () => {
   assert.equal(
     isEventPendingReview(
       makeEvent({
@@ -49,8 +49,19 @@ test("isEventPendingReview matches backend pending semantics", () => {
   assert.equal(
     isEventPendingReview(
       makeEvent({
+        classification_source: "rule",
+        confidence: 0.9,
+        timesheet_status: "suggested",
+      })
+    ),
+    true
+  );
+  assert.equal(
+    isEventPendingReview(
+      makeEvent({
         classification_source: "manual",
         confidence: 1,
+        timesheet_status: "approved",
       })
     ),
     false
@@ -65,13 +76,15 @@ test("aggregateToReviewWorkBlocks excludes already approved events", () => {
       end_time: "2026-03-08T08:30:00.000Z",
       classification_source: "manual",
       confidence: 1,
+      timesheet_status: "approved",
     }),
     makeEvent({
       id: 2,
       start_time: "2026-03-08T09:00:00.000Z",
       end_time: "2026-03-08T09:30:00.000Z",
-      classification_source: "pending",
-      confidence: 0.1,
+      classification_source: "rule",
+      confidence: 0.9,
+      timesheet_status: "suggested",
     }),
   ]);
 

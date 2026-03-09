@@ -2,22 +2,29 @@ import { useState, useEffect, useCallback } from "react";
 import { listen } from "@tauri-apps/api/event";
 import PageTopStrip from "../components/PageTopStrip";
 import WorkBlockCard from "../components/WorkBlockCard";
+import ManualTimeEntryCard from "../components/ManualTimeEntryCard";
+import RuleSuggestions from "../components/RuleSuggestions";
 import { useCommandDeckState } from "../hooks/useCommandDeckState";
 import { api } from "../lib/tauri";
-import type { Event } from "../lib/types";
+import type { Event, ManualTimeEntry, NewManualTimeEntry } from "../lib/types";
 import { aggregateToReviewWorkBlocks } from "../lib/workblocks";
 
 export default function ReviewQueue() {
   const { visualState, statusLabel } = useCommandDeckState();
   const [events, setEvents] = useState<Event[]>([]);
+  const [manualEntries, setManualEntries] = useState<ManualTimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set());
   const [reclassifying, setReclassifying] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
-      const pendingEvents = await api.getPendingEvents();
+      const [pendingEvents, pendingManualEntries] = await Promise.all([
+        api.getPendingEvents(),
+        api.getPendingManualTimeEntries(),
+      ]);
       setEvents(pendingEvents);
+      setManualEntries(pendingManualEntries);
     } catch (e) {
       console.error("Failed to load pending events:", e);
     } finally {
@@ -40,10 +47,43 @@ export default function ReviewQueue() {
 
   const blocks = aggregateToReviewWorkBlocks(events);
   const pendingBlocks = blocks.filter((b) => !approvedIds.has(b.id));
+  const attentionCount = pendingBlocks.length + manualEntries.length;
 
   const handleApproved = useCallback((blockId: string) => {
     setApprovedIds((prev) => new Set(prev).add(blockId));
   }, []);
+
+  const handleSaveManualEntry = useCallback(
+    async (id: number, entry: NewManualTimeEntry) => {
+      await api.updateManualTimeEntry(id, entry);
+      await refresh();
+    },
+    [refresh]
+  );
+
+  const handleApproveManualEntry = useCallback(
+    async (id: number) => {
+      await api.setManualTimeEntryStatus(id, "approved");
+      await refresh();
+    },
+    [refresh]
+  );
+
+  const handleExcludeManualEntry = useCallback(
+    async (id: number) => {
+      await api.setManualTimeEntryStatus(id, "excluded");
+      await refresh();
+    },
+    [refresh]
+  );
+
+  const handleDeleteManualEntry = useCallback(
+    async (id: number) => {
+      await api.deleteManualTimeEntry(id);
+      await refresh();
+    },
+    [refresh]
+  );
 
   const handleReclassify = async () => {
     setReclassifying(true);
@@ -80,9 +120,9 @@ export default function ReviewQueue() {
       <PageTopStrip
         title="Review"
         subtitle={
-          pendingBlocks.length === 0
-            ? "Nothing needs review"
-            : `${pendingBlocks.length} work block${pendingBlocks.length !== 1 ? "s" : ""} to review`
+          attentionCount === 0
+            ? "Nothing needs attention"
+            : `${attentionCount} item${attentionCount !== 1 ? "s" : ""} need attention`
         }
         visualState={visualState}
         statusLabel={statusLabel}
@@ -107,7 +147,9 @@ export default function ReviewQueue() {
         )}
       />
 
-      {pendingBlocks.length === 0 ? (
+      <RuleSuggestions />
+
+      {attentionCount === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           {/* Animated success state */}
           <div className="relative w-16 h-16 mb-4">
@@ -121,23 +163,54 @@ export default function ReviewQueue() {
           </div>
           <p className="text-base font-medium text-slate-700">All clear</p>
           <p className="text-xs text-slate-500 mt-1.5 max-w-xs">
-            New uncertain work blocks will appear here as you use your computer. Chronos only shows items that still need review.
+            New unresolved work blocks will appear here as you use your computer. Chronos only shows items that still need attention before export.
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {pendingBlocks.map((block, i) => (
-            <div
-              key={block.id}
-              className="animate-slide-up"
-              style={{ animationDelay: `${i * 50}ms` }}
-            >
-              <WorkBlockCard
-                block={block}
-                onApproved={handleApproved}
-              />
-            </div>
-          ))}
+        <div className="space-y-5">
+          {pendingBlocks.length > 0 ? (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-800">Captured work blocks</h3>
+                <span className="text-xs text-slate-500">
+                  {pendingBlocks.length} block{pendingBlocks.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              {pendingBlocks.map((block, i) => (
+                <div
+                  key={block.id}
+                  className="animate-slide-up"
+                  style={{ animationDelay: `${i * 50}ms` }}
+                >
+                  <WorkBlockCard
+                    block={block}
+                    onApproved={handleApproved}
+                  />
+                </div>
+              ))}
+            </section>
+          ) : null}
+
+          {manualEntries.length > 0 ? (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-800">Manual entries</h3>
+                <span className="text-xs text-slate-500">
+                  {manualEntries.length} entr{manualEntries.length === 1 ? "y" : "ies"}
+                </span>
+              </div>
+              {manualEntries.map((entry) => (
+                <ManualTimeEntryCard
+                  key={entry.id}
+                  entry={entry}
+                  onSave={handleSaveManualEntry}
+                  onApprove={handleApproveManualEntry}
+                  onExclude={handleExcludeManualEntry}
+                  onDelete={handleDeleteManualEntry}
+                />
+              ))}
+            </section>
+          ) : null}
         </div>
       )}
     </div>

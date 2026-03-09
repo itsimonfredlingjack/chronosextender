@@ -68,7 +68,7 @@ export default function StatusPopover({
     health === "red"
       ? "Offline"
       : pendingCount > 0
-        ? `${pendingCount} to review`
+        ? `${pendingCount} need attention`
         : !trackingActive
           ? "Paused"
           : "All good";
@@ -230,7 +230,7 @@ export default function StatusPopover({
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--color-elevated)] transition-colors text-left"
               >
                 <span className={`w-2 h-2 rounded-full shrink-0 ${pendingCount > 0 ? "bg-amber-500" : "bg-slate-400"}`} />
-                <span className="text-xs text-slate-700 flex-1">Review Queue</span>
+                <span className="text-xs text-slate-700 flex-1">Needs attention</span>
                 <span className={`text-xs ${pendingCount > 0 ? "text-amber-600" : "text-slate-500"}`}>
                   {pendingCount > 0 ? `${pendingCount} items` : "Clear"}
                 </span>

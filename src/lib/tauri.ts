@@ -7,6 +7,7 @@ import type {
   CloudSyncStatus,
   FlowSession,
   FlowStatus,
+  ManualTimeEntry,
   NewProject,
   NewManualTimeEntry,
   NewRule,
@@ -29,6 +30,9 @@ export const api = {
   getTimeline: (date: string) => invoke<Event[]>("get_timeline", { date }),
 
   getPendingEvents: () => invoke<Event[]>("get_pending_events"),
+
+  getPendingManualTimeEntries: () =>
+    invoke<ManualTimeEntry[]>("get_pending_manual_time_entries"),
 
   getTimesheetDay: (date: string) =>
     invoke<TimesheetDayData>("get_timesheet_day", { date }),

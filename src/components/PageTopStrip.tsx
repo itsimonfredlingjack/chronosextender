@@ -23,7 +23,7 @@ export default function PageTopStrip({
   return (
     <div className="page-top-strip animate-slide-up">
       <div>
-        <p className="page-eyebrow">Command Deck</p>
+        <p className="page-eyebrow">Time workspace</p>
         <h2 className="page-title font-display">{title}</h2>
         {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
       </div>

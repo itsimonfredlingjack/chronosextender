@@ -78,6 +78,16 @@ pub async fn get_pending_events(state: State<'_, Arc<DaemonState>>) -> Result<Ve
 }
 
 #[tauri::command]
+pub async fn get_pending_manual_time_entries(
+    state: State<'_, Arc<DaemonState>>,
+) -> Result<Vec<ManualTimeEntry>> {
+    state
+        .db
+        .get_pending_manual_time_entries()
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn get_timesheet_day(
     state: State<'_, Arc<DaemonState>>,
     date: String,
@@ -568,8 +578,12 @@ pub async fn show_dashboard(app: tauri::AppHandle) -> Result<()> {
 
 #[tauri::command]
 pub async fn get_pending_count(state: State<'_, Arc<DaemonState>>) -> Result<usize> {
-    let pending = state.db.get_pending_events().map_err(|e| e.to_string())?;
-    Ok(pending.len())
+    let pending_events = state.db.get_pending_events().map_err(|e| e.to_string())?;
+    let pending_manual_entries = state
+        .db
+        .get_pending_manual_time_entries()
+        .map_err(|e| e.to_string())?;
+    Ok(pending_events.len() + pending_manual_entries.len())
 }
 
 #[tauri::command]

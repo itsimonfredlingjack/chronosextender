@@ -112,9 +112,10 @@ export default function Layout() {
   const closeStatus = useCallback(() => setStatusOpen(false), []);
 
   const tabs = [
-    { to: "/", label: "Pulse", icon: "◉", end: true },
+    { to: "/", label: "Today", icon: "◉", end: true },
     { to: "/review", label: "Review", icon: "☰" },
     { to: "/timesheets", label: "Timesheets", icon: "▤" },
+    { to: "/reports", label: "Reports", icon: "▥" },
     { to: "/settings", label: "Settings", icon: "⚙" },
   ];
 
@@ -131,9 +132,7 @@ export default function Layout() {
             const isActive =
               tab.end
                 ? location.pathname === tab.to || location.pathname === "/dashboard"
-                : tab.to === "/timesheets"
-                  ? location.pathname.startsWith("/timesheets") || location.pathname.startsWith("/reports")
-                  : location.pathname.startsWith(tab.to);
+                : location.pathname.startsWith(tab.to);
 
             return (
               <NavLink

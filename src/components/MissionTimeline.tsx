@@ -36,8 +36,8 @@ export default function MissionTimeline({
     <section className={`mission-timeline-shell ${stateMeta.glowClassName}`}>
       <div className="mission-timeline-header">
         <div>
-          <p className="mission-eyebrow">Command Deck</p>
-          <h1 className="mission-title font-display">Mission timeline</h1>
+          <p className="mission-eyebrow">Tracking summary</p>
+          <h1 className="mission-title font-display">Today overview</h1>
         </div>
         <span className={stateMeta.chipClassName}>{statusLabel}</span>
       </div>
@@ -54,7 +54,7 @@ export default function MissionTimeline({
         </span>
       </div>
 
-      <div className="mission-track" role="img" aria-label="Mission timeline by activity state">
+      <div className="mission-track" role="img" aria-label="Today timeline by activity state">
         {segments.map((segment, index) => (
           <div
             key={`${segment.type}-${index}`}

@@ -150,7 +150,7 @@ export default function WorkBlockCard({ block, onApproved }: Props) {
 
       {!editing && (
         <p className="mt-2 text-[11px] text-slate-500">
-          Looks right keeps the suggested label. Adjust lets you choose a different category first.
+          Looks right approves this block as shown. Adjust lets you change the category first.
         </p>
       )}
     </div>

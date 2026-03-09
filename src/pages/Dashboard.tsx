@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 import CategoryRace from "../components/CategoryRace";
 import MissionTimeline from "../components/MissionTimeline";
@@ -126,16 +127,19 @@ function IdleSummary() {
         <div className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-500/10 to-blue-500/8 blur-xl" />
       </div>
 
-      <h2 className="text-lg text-slate-700 font-display">Chronos AI</h2>
+      <h2 className="text-lg text-slate-700 font-display">Nothing is active yet</h2>
 
       <p className="text-sm text-slate-500 leading-relaxed">
-        Waiting for window activity.
+        Chronos starts to make sense after tracking is active and the first work blocks are captured.
       </p>
 
       <div className="mt-2 px-4 py-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-left space-y-2.5">
-        <p className="text-xs text-slate-600">
-          <span className="text-amber-600">Tip:</span> Grant <strong className="text-slate-800">Accessibility</strong> permission in System Settings {"\u2192"} Privacy & Security for window tracking.
-        </p>
+        <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Setup checklist</p>
+        <div className="space-y-2 text-xs text-slate-600">
+          <p>1. Enable <strong className="text-slate-800">Accessibility</strong> and <strong className="text-slate-800">Screen Recording</strong> in macOS privacy settings.</p>
+          <p>2. Open <strong className="text-slate-800">Settings</strong> to confirm local AI, projects, and rules.</p>
+          <p>3. Move through your normal apps. Captured time will appear here, then flow into Review and Reports.</p>
+        </div>
         <div className="flex flex-wrap gap-2">
           <kbd className="text-[10px] px-2 py-1 rounded-md bg-[var(--color-elevated)] border border-[var(--color-border)] text-slate-600 font-data">
             {"\u2318"}+Shift+T
@@ -157,11 +161,14 @@ function IdleSummary() {
 
 export default function Dashboard() {
   const { events, loading } = useEvents();
+  const navigate = useNavigate();
   const {
     flowStatus,
     trackingActive,
     visualState,
     statusLabel,
+    pendingCount,
+    ollamaConnected,
     setTrackingActive,
     refreshStatus,
   } = useCommandDeckState();
@@ -204,6 +211,13 @@ export default function Dashboard() {
   );
 
   const trackingIsActive = trackingActive ?? true;
+  const currentAppLabel = currentSession?.apps[0] ?? "No active app";
+  const reportsSummary =
+    totalSeconds > 0
+      ? pendingCount > 0
+        ? "Review unresolved time before trusting reports."
+        : "Reports are ready to read."
+      : "Reports fill in after time is captured.";
 
   const handleToggle = async () => {
     const next = await api.toggleTracking();
@@ -233,41 +247,111 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="dashboard-main-stage flex-1 flex flex-col items-center justify-center relative z-10 gap-4 sm:gap-6 px-4 sm:px-8">
-        {currentSession ? (
-          <>
-            <ActivePulse
-              session={currentSession}
-              flowStatus={flowStatus}
-              trackingActive={trackingIsActive}
-              onToggle={handleToggle}
-            />
-            <CategoryRace
-              categories={categoryTotals}
-              activeCategory={currentSession.category}
-              totalSeconds={totalSeconds}
-            />
-          </>
-        ) : totalSeconds > 0 ? (
-          <>
-            <div className="text-center">
-              <span
-                className="text-[56px] md:text-[64px] leading-none text-slate-900 tracking-tight font-display"
-                style={{ textShadow: "0 10px 30px rgba(30, 41, 59, 0.1)" }}
-              >
-                {formatDuration(totalSeconds)}
-              </span>
-              <p className="text-sm text-slate-500 mt-2">tracked today</p>
+      <div className="dashboard-main-stage flex-1 flex flex-col relative z-10 gap-4 sm:gap-6 px-4 sm:px-8 pt-2 sm:pt-3">
+        <div className="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 animate-slide-up" style={{ animationDelay: "0.04s" }}>
+          <div className="stat-card">
+            <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Tracking</p>
+            <p className="text-xl text-slate-900 font-display mt-2">
+              {trackingIsActive ? "Active" : "Paused"}
+            </p>
+            <p className="text-xs text-slate-600 mt-1">{currentAppLabel}</p>
+          </div>
+          <div className="stat-card-hero">
+            <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Captured Today</p>
+            <p className="text-[1.75rem] leading-none font-display bg-gradient-to-r from-sky-600 to-indigo-600 bg-clip-text text-transparent mt-2">
+              {formatDuration(totalSeconds)}
+            </p>
+            <p className="text-xs text-slate-600 mt-1">Automatic time captured so far</p>
+          </div>
+          <div className="stat-card">
+            <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Needs Attention</p>
+            <p className="text-xl text-slate-900 font-display mt-2">{pendingCount}</p>
+            <button
+              onClick={() => navigate("/review")}
+              className="mt-3 btn-ghost text-xs"
+            >
+              Open Review
+            </button>
+          </div>
+          <div className="stat-card">
+            <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Reports</p>
+            <p className="text-sm text-slate-700 mt-2 leading-relaxed">{reportsSummary}</p>
+            <button
+              onClick={() => navigate("/reports")}
+              className="mt-3 btn-ghost text-xs"
+            >
+              Open Reports
+            </button>
+          </div>
+        </div>
+
+        <div className="w-full max-w-5xl mx-auto rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] px-4 py-3 sm:px-5 sm:py-4 animate-slide-up" style={{ animationDelay: "0.08s" }}>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.08em] text-slate-500">How to use Chronos</p>
+              <p className="text-sm text-slate-700 mt-1 leading-relaxed">
+                Chronos captures time automatically, Review fixes uncertainty, Reports explains where time went, and Timesheets exports approved work.
+              </p>
             </div>
-            <CategoryRace
-              categories={categoryTotals}
-              activeCategory={null}
-              totalSeconds={totalSeconds}
-            />
-          </>
-        ) : (
-          <IdleSummary />
-        )}
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => navigate("/review")} className="btn-primary text-xs">
+                Review Time
+              </button>
+              <button onClick={() => navigate("/timesheets")} className="btn-ghost text-xs">
+                Open Timesheets
+              </button>
+              <button onClick={() => navigate("/settings")} className="btn-ghost text-xs">
+                Settings
+              </button>
+            </div>
+          </div>
+          {!ollamaConnected && (
+            <p className="text-xs text-amber-700 mt-3">
+              Local AI is offline. Time can still be captured, but classification and summaries may need more manual cleanup.
+            </p>
+          )}
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 sm:gap-6">
+          {currentSession ? (
+            <>
+              <div className="text-center">
+                <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Tracking Now</p>
+              </div>
+              <ActivePulse
+                session={currentSession}
+                flowStatus={flowStatus}
+                trackingActive={trackingIsActive}
+                onToggle={handleToggle}
+              />
+              <CategoryRace
+                categories={categoryTotals}
+                activeCategory={currentSession.category}
+                totalSeconds={totalSeconds}
+              />
+            </>
+          ) : totalSeconds > 0 ? (
+            <>
+              <div className="text-center">
+                <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Today So Far</p>
+                <span
+                  className="text-[56px] md:text-[64px] leading-none text-slate-900 tracking-tight font-display"
+                  style={{ textShadow: "0 10px 30px rgba(30, 41, 59, 0.1)" }}
+                >
+                  {formatDuration(totalSeconds)}
+                </span>
+                <p className="text-sm text-slate-500 mt-2">captured and ready to review</p>
+              </div>
+              <CategoryRace
+                categories={categoryTotals}
+                activeCategory={null}
+                totalSeconds={totalSeconds}
+              />
+            </>
+          ) : (
+            <IdleSummary />
+          )}
+        </div>
       </div>
 
       <div className="dashboard-bottom-ribbon relative z-10 px-4 sm:px-8 pb-4 sm:pb-6 animate-slide-up" style={{ animationDelay: "0.1s" }}>

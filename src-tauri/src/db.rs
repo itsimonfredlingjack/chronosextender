@@ -375,7 +375,17 @@ impl Database {
                     browser_url, duration_seconds, category, project, task_description,
                     confidence, classification_source, timesheet_status, approved_at, created_at
              FROM events
-             WHERE classification_source = 'pending' OR confidence < 0.5
+             WHERE COALESCE(
+                 timesheet_status,
+                 CASE
+                     WHEN classification_source = 'pending'
+                       OR confidence < 0.5
+                       OR category IS NULL
+                       OR project IS NULL
+                     THEN 'needs_review'
+                     ELSE 'suggested'
+                 END
+             ) IN ('needs_review', 'suggested')
              ORDER BY start_time DESC",
         )?;
         let events = stmt
@@ -684,6 +694,35 @@ impl Database {
         Ok(entries)
     }
 
+    pub fn get_pending_manual_time_entries(&self) -> Result<Vec<ManualTimeEntry>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, entry_date, duration_seconds, project, category, task_description,
+                    source, timesheet_status, approved_at, created_at, updated_at
+             FROM manual_time_entries
+             WHERE timesheet_status IN ('needs_review', 'suggested')
+             ORDER BY entry_date DESC, created_at DESC",
+        )?;
+        let entries = stmt
+            .query_map([], |row| {
+                Ok(ManualTimeEntry {
+                    id: row.get(0)?,
+                    entry_date: row.get(1)?,
+                    duration_seconds: row.get(2)?,
+                    project: row.get(3)?,
+                    category: row.get(4)?,
+                    task_description: row.get(5)?,
+                    source: row.get(6)?,
+                    timesheet_status: row.get(7)?,
+                    approved_at: row.get(8)?,
+                    created_at: row.get(9)?,
+                    updated_at: row.get(10)?,
+                })
+            })?
+            .collect::<Result<Vec<_>>>()?;
+        Ok(entries)
+    }
+
     // --- Daily Summary ---
 
     pub fn get_daily_summary(&self, date: &str) -> Result<Option<Summary>> {
@@ -935,5 +974,95 @@ mod tests {
             .query_row("SELECT COUNT(*) FROM events", [], |row| row.get(0))
             .expect("event count");
         assert_eq!(event_count, 0);
+    }
+
+    #[test]
+    fn get_pending_events_returns_all_unresolved_timesheet_events() {
+        let db = make_test_db();
+        db.init_tables().expect("tables");
+
+        let suggested_id = db.insert_event(&make_new_event()).expect("insert suggested");
+        db.close_event(suggested_id, "2026-03-09T09:00:00", 3600)
+            .expect("close suggested");
+        db.update_event_classification(
+            suggested_id,
+            &ClassificationResult {
+                project: Some("Chronos".to_string()),
+                category: "coding".to_string(),
+                task_description: Some("Suggested".to_string()),
+                confidence: 0.91,
+                billable: false,
+            },
+            "rule",
+        )
+        .expect("classify suggested");
+
+        let approved_id = db.insert_event(&make_new_event()).expect("insert approved");
+        db.close_event(approved_id, "2026-03-09T10:00:00", 1800)
+            .expect("close approved");
+        db.update_event_classification(
+            approved_id,
+            &ClassificationResult {
+                project: Some("Chronos".to_string()),
+                category: "coding".to_string(),
+                task_description: Some("Approved".to_string()),
+                confidence: 0.95,
+                billable: false,
+            },
+            "manual",
+        )
+        .expect("classify approved");
+        db.update_event_timesheet_status(approved_id, "approved")
+            .expect("approve");
+
+        let unresolved_ids = db
+            .get_pending_events()
+            .expect("fetch unresolved")
+            .into_iter()
+            .map(|event| event.id)
+            .collect::<Vec<_>>();
+
+        assert!(unresolved_ids.contains(&suggested_id));
+        assert!(!unresolved_ids.contains(&approved_id));
+    }
+
+    #[test]
+    fn get_pending_manual_time_entries_returns_only_unresolved_manual_entries() {
+        let db = make_test_db();
+        db.init_tables().expect("tables");
+
+        let unresolved_id = db
+            .insert_manual_time_entry(&NewManualTimeEntry {
+                entry_date: "2026-03-09".to_string(),
+                duration_seconds: 1800,
+                project: Some("Chronos".to_string()),
+                category: Some("documentation".to_string()),
+                task_description: Some("Draft notes".to_string()),
+                source: "manual".to_string(),
+            })
+            .expect("insert unresolved");
+
+        let approved_id = db
+            .insert_manual_time_entry(&NewManualTimeEntry {
+                entry_date: "2026-03-08".to_string(),
+                duration_seconds: 1200,
+                project: Some("Chronos".to_string()),
+                category: Some("documentation".to_string()),
+                task_description: Some("Approved note".to_string()),
+                source: "manual".to_string(),
+            })
+            .expect("insert approved");
+        db.update_manual_time_entry_status(approved_id, "approved")
+            .expect("approve manual entry");
+
+        let unresolved_ids = db
+            .get_pending_manual_time_entries()
+            .expect("fetch unresolved manual entries")
+            .into_iter()
+            .map(|entry| entry.id)
+            .collect::<Vec<_>>();
+
+        assert!(unresolved_ids.contains(&unresolved_id));
+        assert!(!unresolved_ids.contains(&approved_id));
     }
 }

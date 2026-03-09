@@ -96,7 +96,7 @@ test("MissionTimeline renders fallback copy when visual state is unknown", () =>
   );
 
   assert.match(html, /Status unavailable/);
-  assert.match(html, /Mission timeline/i);
+  assert.match(html, /Today overview/i);
 });
 
 test("MissionTimeline preserves light-shell class contract", () => {

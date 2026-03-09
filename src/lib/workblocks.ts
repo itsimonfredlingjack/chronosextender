@@ -1,5 +1,6 @@
 import type { Event, Session, Category, WorkBlock } from "./types";
 import { aggregateToSessions } from "./sessions";
+import { getEventTimesheetStatus } from "./timesheets";
 import { CATEGORY_LABELS } from "./types";
 
 const MAX_BLOCK_GAP_SECONDS = 1800; // 30 minutes
@@ -81,7 +82,8 @@ function getDominantProject(sessions: Session[]): string | null {
 }
 
 export function isEventPendingReview(event: Event): boolean {
-  return event.classification_source === "pending" || event.confidence < 0.5;
+  const status = getEventTimesheetStatus(event);
+  return status === "needs_review" || status === "suggested";
 }
 
 export function aggregateToWorkBlocks(events: Event[]): WorkBlock[] {

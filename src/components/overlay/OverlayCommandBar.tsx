@@ -19,9 +19,9 @@ export default function OverlayCommandBar({ pendingCount, trackingActive, onDism
     if (pendingCount > 0) {
       items.push({
         id: "review-blocks",
-        label: `Review ${pendingCount} work blocks`,
+        label: `Resolve ${pendingCount} attention item${pendingCount === 1 ? "" : "s"}`,
         icon: "\u25B8",
-        keywords: ["review", "blocks", "check", "confirm"],
+        keywords: ["review", "attention", "check", "confirm", "resolve"],
         execute: async () => {
           await api.showDashboard();
           onDismiss();
@@ -32,9 +32,9 @@ export default function OverlayCommandBar({ pendingCount, trackingActive, onDism
     items.push(
       {
         id: "open-dashboard",
-        label: "Open Dashboard",
+        label: "Open Today",
         icon: "\u25C9",
-        keywords: ["dashboard", "open", "main", "window"],
+        keywords: ["dashboard", "today", "open", "main", "window"],
         execute: async () => {
           await api.showDashboard();
           onDismiss();
@@ -53,9 +53,9 @@ export default function OverlayCommandBar({ pendingCount, trackingActive, onDism
       },
       {
         id: "todays-report",
-        label: "Open Dashboard",
+        label: "Open Main Window",
         icon: "\u25A4",
-        keywords: ["dashboard", "pulse", "today", "summary"],
+        keywords: ["main", "window", "dashboard", "today"],
         execute: async () => {
           await api.showDashboard();
           onDismiss();
@@ -115,7 +115,7 @@ export default function OverlayCommandBar({ pendingCount, trackingActive, onDism
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="pause, review, AI pass..."
+          placeholder="pause, resolve, AI pass..."
           className="flex-1 py-1 bg-transparent text-sm text-slate-900 placeholder-slate-500 outline-none"
         />
         <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface)] text-slate-500 border border-[var(--color-border)]">
