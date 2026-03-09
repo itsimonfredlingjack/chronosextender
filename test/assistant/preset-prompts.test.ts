@@ -20,3 +20,12 @@ test("getPresetPrompts prioritizes weekly prompts on reports pages", () => {
   assert.match(String(prompts[0]?.prompt), /week/i);
   assert.ok(prompts.some((preset) => /project/i.test(preset.prompt)));
 });
+
+test("getPresetPrompts treats timesheets as the reports-style weekly context", () => {
+  const prompts = getPresetPrompts("timesheets");
+
+  assert.equal(prompts.length, 4);
+  assert.equal(prompts[0]?.label, "This Week");
+  assert.match(String(prompts[0]?.prompt), /week/i);
+  assert.ok(prompts.some((preset) => /project|time/i.test(preset.prompt)));
+});

@@ -36,11 +36,11 @@ export function createNavActions(
       execute: () => { navigate("/review"); onClose(); },
     },
     {
-      id: "nav-reports",
-      label: "Go to Reports",
+      id: "nav-timesheets",
+      label: "Go to Timesheets",
       icon: "\u25A4",
-      keywords: ["reports", "summary", "analytics", "export"],
-      execute: () => { navigate("/reports"); onClose(); },
+      keywords: ["timesheets", "reports", "summary", "analytics", "export", "time"],
+      execute: () => { navigate("/timesheets"); onClose(); },
     },
     {
       id: "nav-settings",

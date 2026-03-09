@@ -8,6 +8,53 @@ use crate::models::*;
 
 type Result<T> = std::result::Result<T, String>;
 
+fn resolve_event_timesheet_status(event: &Event) -> &str {
+    event.timesheet_status.as_deref().unwrap_or_else(|| {
+        if event.classification_source == "pending"
+            || event.confidence < 0.5
+            || event.category.is_none()
+            || event.project.is_none()
+        {
+            "needs_review"
+        } else {
+            "suggested"
+        }
+    })
+}
+
+fn build_timesheet_counts(
+    events: &[Event],
+    manual_entries: &[ManualTimeEntry],
+) -> TimesheetStatusCounts {
+    let mut counts = TimesheetStatusCounts::default();
+
+    for event in events {
+        match resolve_event_timesheet_status(event) {
+            "suggested" => counts.suggested += 1,
+            "needs_review" => counts.needs_review += 1,
+            "approved" => counts.approved += 1,
+            "excluded" => counts.excluded += 1,
+            _ => counts.needs_review += 1,
+        }
+    }
+
+    for entry in manual_entries {
+        match entry.timesheet_status.as_str() {
+            "suggested" => counts.suggested += 1,
+            "needs_review" => counts.needs_review += 1,
+            "approved" => counts.approved += 1,
+            "excluded" => counts.excluded += 1,
+            _ => counts.needs_review += 1,
+        }
+    }
+
+    counts
+}
+
+fn unresolved_count(counts: &TimesheetStatusCounts) -> usize {
+    counts.suggested + counts.needs_review
+}
+
 #[tauri::command]
 pub async fn get_today_events(state: State<'_, Arc<DaemonState>>) -> Result<Vec<Event>> {
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
@@ -31,6 +78,53 @@ pub async fn get_pending_events(state: State<'_, Arc<DaemonState>>) -> Result<Ve
 }
 
 #[tauri::command]
+pub async fn get_timesheet_day(
+    state: State<'_, Arc<DaemonState>>,
+    date: String,
+) -> Result<TimesheetDayData> {
+    let events = state.db.get_events_for_date(&date).map_err(|e| e.to_string())?;
+    let manual_entries = state
+        .db
+        .get_manual_time_entries_for_date_range(&date, &date)
+        .map_err(|e| e.to_string())?;
+    let counts = build_timesheet_counts(&events, &manual_entries);
+
+    Ok(TimesheetDayData {
+        date,
+        events,
+        manual_entries,
+        unresolved_count: unresolved_count(&counts),
+        counts,
+    })
+}
+
+#[tauri::command]
+pub async fn get_timesheet_range(
+    state: State<'_, Arc<DaemonState>>,
+    start: String,
+    end: String,
+) -> Result<TimesheetRangeData> {
+    let events = state
+        .db
+        .get_events_for_date_range(&start, &end)
+        .map_err(|e| e.to_string())?;
+    let manual_entries = state
+        .db
+        .get_manual_time_entries_for_date_range(&start, &end)
+        .map_err(|e| e.to_string())?;
+    let counts = build_timesheet_counts(&events, &manual_entries);
+
+    Ok(TimesheetRangeData {
+        start,
+        end,
+        events,
+        manual_entries,
+        unresolved_count: unresolved_count(&counts),
+        counts,
+    })
+}
+
+#[tauri::command]
 pub async fn reclassify_event(
     app: tauri::AppHandle,
     state: State<'_, Arc<DaemonState>>,
@@ -49,6 +143,180 @@ pub async fn reclassify_event(
     state
         .db
         .update_event_classification(event_id, &result, "manual")
+        .map_err(|e| e.to_string())?;
+    state
+        .db
+        .update_event_timesheet_status(event_id, "approved")
+        .map_err(|e| e.to_string())?;
+    app.emit("events-changed", ()).ok();
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn approve_timesheet_events(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<DaemonState>>,
+    event_ids: Vec<i64>,
+    project: Option<String>,
+    category: String,
+    task_description: Option<String>,
+) -> Result<bool> {
+    for event_id in event_ids {
+        let result = ClassificationResult {
+            project: project.clone(),
+            category: category.clone(),
+            task_description: task_description.clone(),
+            confidence: 1.0,
+            billable: false,
+        };
+        state
+            .db
+            .update_event_classification(event_id, &result, "manual")
+            .map_err(|e| e.to_string())?;
+        state
+            .db
+            .update_event_timesheet_status(event_id, "approved")
+            .map_err(|e| e.to_string())?;
+    }
+
+    app.emit("events-changed", ()).ok();
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn set_timesheet_events_status(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<DaemonState>>,
+    event_ids: Vec<i64>,
+    status: String,
+) -> Result<bool> {
+    for event_id in event_ids {
+        state
+            .db
+            .update_event_timesheet_status(event_id, &status)
+            .map_err(|e| e.to_string())?;
+    }
+
+    app.emit("events-changed", ()).ok();
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn approve_timesheet_day(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<DaemonState>>,
+    date: String,
+) -> Result<bool> {
+    let day = get_timesheet_day(state.clone(), date).await?;
+
+    for event in &day.events {
+        let status = resolve_event_timesheet_status(event);
+        if status == "suggested" || status == "needs_review" {
+            state
+                .db
+                .update_event_timesheet_status(event.id, "approved")
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
+    for entry in &day.manual_entries {
+        if entry.timesheet_status == "suggested" || entry.timesheet_status == "needs_review" {
+            state
+                .db
+                .update_manual_time_entry_status(entry.id, "approved")
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
+    app.emit("events-changed", ()).ok();
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn approve_timesheet_range(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<DaemonState>>,
+    start: String,
+    end: String,
+) -> Result<bool> {
+    let range = get_timesheet_range(state.clone(), start, end).await?;
+
+    for event in &range.events {
+        let status = resolve_event_timesheet_status(event);
+        if status == "suggested" || status == "needs_review" {
+            state
+                .db
+                .update_event_timesheet_status(event.id, "approved")
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
+    for entry in &range.manual_entries {
+        if entry.timesheet_status == "suggested" || entry.timesheet_status == "needs_review" {
+            state
+                .db
+                .update_manual_time_entry_status(entry.id, "approved")
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
+    app.emit("events-changed", ()).ok();
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn create_manual_time_entry(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<DaemonState>>,
+    entry: NewManualTimeEntry,
+) -> Result<i64> {
+    let id = state
+        .db
+        .insert_manual_time_entry(&entry)
+        .map_err(|e| e.to_string())?;
+    app.emit("events-changed", ()).ok();
+    Ok(id)
+}
+
+#[tauri::command]
+pub async fn update_manual_time_entry(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<DaemonState>>,
+    id: i64,
+    entry: NewManualTimeEntry,
+) -> Result<bool> {
+    state
+        .db
+        .update_manual_time_entry(id, &entry)
+        .map_err(|e| e.to_string())?;
+    app.emit("events-changed", ()).ok();
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn delete_manual_time_entry(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<DaemonState>>,
+    id: i64,
+) -> Result<bool> {
+    state
+        .db
+        .delete_manual_time_entry(id)
+        .map_err(|e| e.to_string())?;
+    app.emit("events-changed", ()).ok();
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn set_manual_time_entry_status(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<DaemonState>>,
+    id: i64,
+    status: String,
+) -> Result<bool> {
+    state
+        .db
+        .update_manual_time_entry_status(id, &status)
         .map_err(|e| e.to_string())?;
     app.emit("events-changed", ()).ok();
     Ok(true)
@@ -166,6 +434,10 @@ pub async fn get_project_summary(
     let db_projects = state.db.get_all_projects().map_err(|e| e.to_string())?;
     let project_info: std::collections::HashMap<String, &Project> =
         db_projects.iter().map(|p| (p.name.clone(), p)).collect();
+    let manual_entries = state
+        .db
+        .get_manual_time_entries_for_date_range(&start, &end)
+        .map_err(|e| e.to_string())?;
 
     let mut project_map: std::collections::HashMap<String, (f64, Vec<(String, f64)>)> =
         std::collections::HashMap::new();
@@ -188,6 +460,23 @@ pub async fn get_project_summary(
             .or_insert_with(|| (0.0, vec![]));
         entry.0 += hours;
         entry.1.push((category, hours));
+    }
+
+    for entry in manual_entries {
+        if entry.timesheet_status == "excluded" {
+            continue;
+        }
+
+        let hours = entry.duration_seconds as f64 / 3600.0;
+        total_hours += hours;
+        let project_name = entry.project.unwrap_or_else(|| "Unclassified".to_string());
+        let category = entry.category.unwrap_or_else(|| "unknown".to_string());
+
+        let project_entry = project_map
+            .entry(project_name)
+            .or_insert_with(|| (0.0, vec![]));
+        project_entry.0 += hours;
+        project_entry.1.push((category, hours));
     }
 
     let mut billable_hours = 0.0;
@@ -327,24 +616,16 @@ pub async fn log_time_nlp(
 
     let mut events_created = 0;
     for entry in &entries {
-        // Compute start/end times: place at noon of the given date, offset by duration
-        let start = format!("{}T12:00:00", entry.date);
-        let duration_secs = entry.duration_minutes * 60;
-        let end_dt = chrono::NaiveDateTime::parse_from_str(&start, "%Y-%m-%dT%H:%M:%S")
-            .map_err(|e| e.to_string())?
-            + chrono::Duration::seconds(duration_secs);
-        let end = end_dt.format("%Y-%m-%dT%H:%M:%S").to_string();
-
         state
             .db
-            .insert_manual_event(
-                &start,
-                &end,
-                duration_secs,
-                &entry.category,
-                entry.project.as_deref(),
-                Some(&entry.task_description),
-            )
+            .insert_manual_time_entry(&NewManualTimeEntry {
+                entry_date: entry.date.clone(),
+                duration_seconds: entry.duration_minutes * 60,
+                project: entry.project.clone(),
+                category: Some(entry.category.clone()),
+                task_description: Some(entry.task_description.clone()),
+                source: "manual_nlp".to_string(),
+            })
             .map_err(|e| e.to_string())?;
         events_created += 1;
     }

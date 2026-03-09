@@ -15,6 +15,8 @@ pub struct Event {
     pub task_description: Option<String>,
     pub confidence: f64,
     pub classification_source: String,
+    pub timesheet_status: Option<String>,
+    pub approved_at: Option<String>,
     pub created_at: String,
 }
 
@@ -177,6 +179,58 @@ pub struct NlpParsedEntry {
     pub category: String,
     pub project: Option<String>,
     pub task_description: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ManualTimeEntry {
+    pub id: i64,
+    pub entry_date: String,
+    pub duration_seconds: i64,
+    pub project: Option<String>,
+    pub category: Option<String>,
+    pub task_description: Option<String>,
+    pub source: String,
+    pub timesheet_status: String,
+    pub approved_at: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewManualTimeEntry {
+    pub entry_date: String,
+    pub duration_seconds: i64,
+    pub project: Option<String>,
+    pub category: Option<String>,
+    pub task_description: Option<String>,
+    pub source: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct TimesheetStatusCounts {
+    pub suggested: usize,
+    pub needs_review: usize,
+    pub approved: usize,
+    pub excluded: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TimesheetDayData {
+    pub date: String,
+    pub events: Vec<Event>,
+    pub manual_entries: Vec<ManualTimeEntry>,
+    pub counts: TimesheetStatusCounts,
+    pub unresolved_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TimesheetRangeData {
+    pub start: String,
+    pub end: String,
+    pub events: Vec<Event>,
+    pub manual_entries: Vec<ManualTimeEntry>,
+    pub counts: TimesheetStatusCounts,
+    pub unresolved_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

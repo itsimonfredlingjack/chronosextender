@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import ReviewQueue from "./pages/ReviewQueue";
-import Reports from "./pages/Reports";
+import Timesheets from "./pages/Timesheets";
 import Settings from "./pages/Settings";
 import OverlayView from "./pages/OverlayView";
 import "./index.css";
@@ -16,7 +16,8 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/review" element={<ReviewQueue />} />
-          <Route path="/reports" element={<Reports />} />
+          <Route path="/timesheets" element={<Timesheets />} />
+          <Route path="/reports" element={<Timesheets />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>

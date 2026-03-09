@@ -25,7 +25,7 @@ const REVIEW_PRESETS: PresetPrompt[] = [
 ];
 
 export function getPresetPrompts(currentView: string): PresetPrompt[] {
-  if (currentView === "reports") {
+  if (currentView === "reports" || currentView === "timesheets") {
     return REPORTS_PRESETS;
   }
 
