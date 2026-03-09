@@ -18,8 +18,16 @@ export interface Event {
   task_description: string | null;
   confidence: number;
   classification_source: "pending" | "llm" | "rule" | "manual";
+  timesheet_status?: TimesheetStatus | null;
+  approved_at?: string | null;
   created_at: string;
 }
+
+export type TimesheetStatus =
+  | "suggested"
+  | "needs_review"
+  | "approved"
+  | "excluded";
 
 export type Category =
   | "coding"
@@ -205,6 +213,70 @@ export interface NlpParsedEntry {
   category: string;
   project: string | null;
   task_description: string;
+}
+
+export interface ManualTimeEntry {
+  id: number;
+  entry_date: string;
+  duration_seconds: number;
+  project: string | null;
+  category: Category | null;
+  task_description: string | null;
+  source: "manual" | "manual_nlp";
+  timesheet_status: TimesheetStatus;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NewManualTimeEntry {
+  entry_date: string;
+  duration_seconds: number;
+  project: string | null;
+  category: Category | null;
+  task_description: string | null;
+  source: "manual" | "manual_nlp";
+}
+
+export interface TimesheetRow {
+  date: string;
+  project: string;
+  category: Category | "unknown";
+  task_description: string;
+  duration_seconds: number;
+  duration_label: string;
+  duration_hours: number;
+  source: "tracked" | ManualTimeEntry["source"];
+}
+
+export interface TimesheetExportReadiness {
+  ready: boolean;
+  unresolvedCount: number;
+  counts: Record<TimesheetStatus, number>;
+}
+
+export interface TimesheetStatusCounts {
+  suggested: number;
+  needs_review: number;
+  approved: number;
+  excluded: number;
+}
+
+export interface TimesheetDayData {
+  date: string;
+  events: Event[];
+  manual_entries: ManualTimeEntry[];
+  counts: TimesheetStatusCounts;
+  unresolved_count: number;
+}
+
+export interface TimesheetRangeData {
+  start: string;
+  end: string;
+  events: Event[];
+  manual_entries: ManualTimeEntry[];
+  counts: TimesheetStatusCounts;
+  unresolved_count: number;
 }
 
 export interface Summary {

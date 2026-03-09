@@ -53,9 +53,9 @@ export default function OverlayCommandBar({ pendingCount, trackingActive, onDism
       },
       {
         id: "todays-report",
-        label: "Today's Report",
+        label: "Open Dashboard",
         icon: "\u25A4",
-        keywords: ["report", "today", "summary"],
+        keywords: ["dashboard", "pulse", "today", "summary"],
         execute: async () => {
           await api.showDashboard();
           onDismiss();

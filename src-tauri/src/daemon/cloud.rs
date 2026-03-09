@@ -487,6 +487,8 @@ mod tests {
             task_description: Some("Should not leave desktop".to_string()),
             confidence: 0.9,
             classification_source: "llm".to_string(),
+            timesheet_status: Some("approved".to_string()),
+            approved_at: Some("2026-03-06T18:00:00".to_string()),
             created_at: "2026-03-06T09:00:00".to_string(),
         }
     }

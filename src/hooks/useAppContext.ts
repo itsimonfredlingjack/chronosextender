@@ -9,6 +9,9 @@ function getCurrentView(pathname: string): string {
   if (pathname === "/" || pathname === "/dashboard") {
     return "dashboard";
   }
+  if (pathname.startsWith("/reports") || pathname.startsWith("/timesheets")) {
+    return "timesheets";
+  }
   return pathname.replace(/^\//, "") || "dashboard";
 }
 

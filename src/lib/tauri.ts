@@ -8,6 +8,7 @@ import type {
   FlowSession,
   FlowStatus,
   NewProject,
+  NewManualTimeEntry,
   NewRule,
   NlpLogResult,
   OllamaStatus,
@@ -17,6 +18,8 @@ import type {
   RuleSuggestion,
   Settings,
   Summary,
+  TimesheetDayData,
+  TimesheetRangeData,
 } from "./types";
 import type { AssistantMessage } from "../types/ai-types";
 
@@ -26,6 +29,12 @@ export const api = {
   getTimeline: (date: string) => invoke<Event[]>("get_timeline", { date }),
 
   getPendingEvents: () => invoke<Event[]>("get_pending_events"),
+
+  getTimesheetDay: (date: string) =>
+    invoke<TimesheetDayData>("get_timesheet_day", { date }),
+
+  getTimesheetRange: (start: string, end: string) =>
+    invoke<TimesheetRangeData>("get_timesheet_range", { start, end }),
 
   reclassifyEvent: (
     eventId: number,
@@ -39,6 +48,40 @@ export const api = {
       category,
       taskDescription,
     }),
+
+  approveTimesheetEvents: (args: {
+    eventIds: number[];
+    project: string | null;
+    category: string;
+    taskDescription: string | null;
+  }) =>
+    invoke<boolean>("approve_timesheet_events", {
+      eventIds: args.eventIds,
+      project: args.project,
+      category: args.category,
+      taskDescription: args.taskDescription,
+    }),
+
+  setTimesheetEventsStatus: (eventIds: number[], status: string) =>
+    invoke<boolean>("set_timesheet_events_status", { eventIds, status }),
+
+  approveTimesheetDay: (date: string) =>
+    invoke<boolean>("approve_timesheet_day", { date }),
+
+  approveTimesheetRange: (start: string, end: string) =>
+    invoke<boolean>("approve_timesheet_range", { start, end }),
+
+  createManualTimeEntry: (entry: NewManualTimeEntry) =>
+    invoke<number>("create_manual_time_entry", { entry }),
+
+  updateManualTimeEntry: (id: number, entry: NewManualTimeEntry) =>
+    invoke<boolean>("update_manual_time_entry", { id, entry }),
+
+  deleteManualTimeEntry: (id: number) =>
+    invoke<boolean>("delete_manual_time_entry", { id }),
+
+  setManualTimeEntryStatus: (id: number, status: string) =>
+    invoke<boolean>("set_manual_time_entry_status", { id, status }),
 
   getProjects: () => invoke<Project[]>("get_projects"),
 

@@ -45,6 +45,8 @@ impl Database {
                 task_description TEXT,
                 confidence REAL DEFAULT 0.0,
                 classification_source TEXT DEFAULT 'pending',
+                timesheet_status TEXT DEFAULT 'needs_review',
+                approved_at TEXT,
                 created_at TEXT DEFAULT (datetime('now'))
             );
             CREATE INDEX IF NOT EXISTS idx_events_start ON events(start_time);
@@ -91,10 +93,74 @@ impl Database {
                 interrupted INTEGER DEFAULT 0,
                 interrupted_by TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS manual_time_entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                entry_date TEXT NOT NULL,
+                duration_seconds INTEGER NOT NULL,
+                project TEXT,
+                category TEXT,
+                task_description TEXT,
+                source TEXT NOT NULL,
+                timesheet_status TEXT DEFAULT 'needs_review',
+                approved_at TEXT,
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_manual_time_entries_date ON manual_time_entries(entry_date);
             ",
         )?;
+        Self::ensure_column(
+            &conn,
+            "events",
+            "timesheet_status",
+            "TEXT DEFAULT 'needs_review'",
+        )?;
+        Self::ensure_column(&conn, "events", "approved_at", "TEXT")?;
         self.seed_default_rules(&conn)?;
         Ok(())
+    }
+
+    fn ensure_column(
+        conn: &Connection,
+        table: &str,
+        column: &str,
+        definition: &str,
+    ) -> Result<()> {
+        if Self::table_has_column(conn, table, column)? {
+            return Ok(());
+        }
+
+        let sql = format!("ALTER TABLE {table} ADD COLUMN {column} {definition}");
+        conn.execute(&sql, [])?;
+        Ok(())
+    }
+
+    fn table_has_column(conn: &Connection, table: &str, column: &str) -> Result<bool> {
+        let sql = format!("PRAGMA table_info({table})");
+        let mut stmt = conn.prepare(&sql)?;
+        let columns = stmt.query_map([], |row| row.get::<_, String>(1))?;
+
+        for name in columns {
+            if name? == column {
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
+    }
+
+    fn derive_timesheet_status(
+        source: &str,
+        confidence: f64,
+        category: Option<&str>,
+        project: Option<&str>,
+    ) -> &'static str {
+        if source == "pending" || confidence < 0.5 || category.is_none() || project.is_none() {
+            "needs_review"
+        } else {
+            "suggested"
+        }
     }
 
     fn seed_default_rules(&self, conn: &Connection) -> Result<()> {
@@ -177,16 +243,25 @@ impl Database {
         source: &str,
     ) -> Result<()> {
         let conn = self.conn.lock().unwrap();
+        let timesheet_status = Self::derive_timesheet_status(
+            source,
+            result.confidence,
+            Some(result.category.as_str()),
+            result.project.as_deref(),
+        );
         conn.execute(
             "UPDATE events SET category = ?1, project = ?2, task_description = ?3,
-             confidence = ?4, classification_source = ?5 WHERE id = ?6",
+             confidence = ?4, classification_source = ?5, timesheet_status = ?6,
+             approved_at = CASE WHEN ?6 = 'approved' THEN datetime('now') ELSE NULL END
+             WHERE id = ?7",
             params![
                 result.category,
                 result.project,
                 result.task_description,
                 result.confidence,
                 source,
-                id,
+                timesheet_status,
+                id
             ],
         )?;
         Ok(())
@@ -206,7 +281,7 @@ impl Database {
         let mut stmt = conn.prepare(
             "SELECT id, start_time, end_time, app_bundle_id, app_name, window_title,
                     browser_url, duration_seconds, category, project, task_description,
-                    confidence, classification_source, created_at
+                    confidence, classification_source, timesheet_status, approved_at, created_at
              FROM events
              WHERE date(start_time) = ?1
              ORDER BY start_time ASC",
@@ -227,7 +302,9 @@ impl Database {
                     task_description: row.get(10)?,
                     confidence: row.get(11)?,
                     classification_source: row.get(12)?,
-                    created_at: row.get(13)?,
+                    timesheet_status: row.get(13)?,
+                    approved_at: row.get(14)?,
+                    created_at: row.get(15)?,
                 })
             })?
             .collect::<Result<Vec<_>>>()?;
@@ -239,7 +316,7 @@ impl Database {
         let mut stmt = conn.prepare(
             "SELECT id, start_time, end_time, app_bundle_id, app_name, window_title,
                     browser_url, duration_seconds, category, project, task_description,
-                    confidence, classification_source, created_at
+                    confidence, classification_source, timesheet_status, approved_at, created_at
              FROM events
              WHERE date(start_time) >= ?1 AND date(start_time) <= ?2
              ORDER BY start_time ASC",
@@ -260,7 +337,9 @@ impl Database {
                     task_description: row.get(10)?,
                     confidence: row.get(11)?,
                     classification_source: row.get(12)?,
-                    created_at: row.get(13)?,
+                    timesheet_status: row.get(13)?,
+                    approved_at: row.get(14)?,
+                    created_at: row.get(15)?,
                 })
             })?
             .collect::<Result<Vec<_>>>()?;
@@ -294,7 +373,7 @@ impl Database {
         let mut stmt = conn.prepare(
             "SELECT id, start_time, end_time, app_bundle_id, app_name, window_title,
                     browser_url, duration_seconds, category, project, task_description,
-                    confidence, classification_source, created_at
+                    confidence, classification_source, timesheet_status, approved_at, created_at
              FROM events
              WHERE classification_source = 'pending' OR confidence < 0.5
              ORDER BY start_time DESC",
@@ -315,7 +394,9 @@ impl Database {
                     task_description: row.get(10)?,
                     confidence: row.get(11)?,
                     classification_source: row.get(12)?,
-                    created_at: row.get(13)?,
+                    timesheet_status: row.get(13)?,
+                    approved_at: row.get(14)?,
+                    created_at: row.get(15)?,
                 })
             })?
             .collect::<Result<Vec<_>>>()?;
@@ -327,7 +408,7 @@ impl Database {
         let mut stmt = conn.prepare(
             "SELECT id, start_time, end_time, app_bundle_id, app_name, window_title,
                     browser_url, duration_seconds, category, project, task_description,
-                    confidence, classification_source, created_at
+                    confidence, classification_source, timesheet_status, approved_at, created_at
              FROM events
              WHERE end_time IS NULL
              ORDER BY start_time DESC LIMIT 1",
@@ -347,7 +428,9 @@ impl Database {
                 task_description: row.get(10)?,
                 confidence: row.get(11)?,
                 classification_source: row.get(12)?,
-                created_at: row.get(13)?,
+                timesheet_status: row.get(13)?,
+                approved_at: row.get(14)?,
+                created_at: row.get(15)?,
             })
         })?;
         Ok(rows.next().transpose()?)
@@ -490,30 +573,115 @@ impl Database {
 
     // --- Manual Events ---
 
-    pub fn insert_manual_event(
-        &self,
-        start_time: &str,
-        end_time: &str,
-        duration_seconds: i64,
-        category: &str,
-        project: Option<&str>,
-        task_description: Option<&str>,
-    ) -> Result<i64> {
+    pub fn update_event_timesheet_status(&self, id: i64, status: &str) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
-            "INSERT INTO events (start_time, end_time, app_bundle_id, app_name, duration_seconds,
-             category, project, task_description, confidence, classification_source)
-             VALUES (?1, ?2, 'manual', 'Manual Entry', ?3, ?4, ?5, ?6, 1.0, 'manual')",
+            "UPDATE events
+             SET timesheet_status = ?1,
+                 approved_at = CASE WHEN ?1 = 'approved' THEN datetime('now') ELSE NULL END
+             WHERE id = ?2",
+            params![status, id],
+        )?;
+        Ok(())
+    }
+
+    pub fn insert_manual_time_entry(&self, entry: &NewManualTimeEntry) -> Result<i64> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO manual_time_entries (
+                entry_date, duration_seconds, project, category, task_description, source, timesheet_status
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'needs_review')",
             params![
-                start_time,
-                end_time,
-                duration_seconds,
-                category,
-                project,
-                task_description
+                entry.entry_date,
+                entry.duration_seconds,
+                entry.project,
+                entry.category,
+                entry.task_description,
+                entry.source,
             ],
         )?;
         Ok(conn.last_insert_rowid())
+    }
+
+    pub fn update_manual_time_entry(
+        &self,
+        id: i64,
+        entry: &NewManualTimeEntry,
+    ) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE manual_time_entries
+             SET entry_date = ?1,
+                 duration_seconds = ?2,
+                 project = ?3,
+                 category = ?4,
+                 task_description = ?5,
+                 source = ?6,
+                 updated_at = datetime('now')
+             WHERE id = ?7",
+            params![
+                entry.entry_date,
+                entry.duration_seconds,
+                entry.project,
+                entry.category,
+                entry.task_description,
+                entry.source,
+                id,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_manual_time_entry_status(&self, id: i64, status: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE manual_time_entries
+             SET timesheet_status = ?1,
+                 approved_at = CASE WHEN ?1 = 'approved' THEN datetime('now') ELSE NULL END,
+                 updated_at = datetime('now')
+             WHERE id = ?2",
+            params![status, id],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_manual_time_entry(&self, id: i64) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM manual_time_entries WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+
+    pub fn get_manual_time_entries_for_date_range(
+        &self,
+        start: &str,
+        end: &str,
+    ) -> Result<Vec<ManualTimeEntry>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, entry_date, duration_seconds, project, category, task_description,
+                    source, timesheet_status, approved_at, created_at, updated_at
+             FROM manual_time_entries
+             WHERE entry_date >= ?1 AND entry_date <= ?2
+             ORDER BY entry_date ASC, created_at ASC",
+        )?;
+        let entries = stmt
+            .query_map(params![start, end], |row| {
+                Ok(ManualTimeEntry {
+                    id: row.get(0)?,
+                    entry_date: row.get(1)?,
+                    duration_seconds: row.get(2)?,
+                    project: row.get(3)?,
+                    category: row.get(4)?,
+                    task_description: row.get(5)?,
+                    source: row.get(6)?,
+                    timesheet_status: row.get(7)?,
+                    approved_at: row.get(8)?,
+                    created_at: row.get(9)?,
+                    updated_at: row.get(10)?,
+                })
+            })?
+            .collect::<Result<Vec<_>>>()?;
+        Ok(entries)
     }
 
     // --- Daily Summary ---
@@ -637,5 +805,135 @@ impl Database {
             let rows = stmt.query_map([], |row| row.get(0))?;
             rows.collect::<Result<Vec<String>>>()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_test_db() -> Database {
+        Database {
+            conn: Mutex::new(Connection::open_in_memory().expect("in-memory sqlite")),
+        }
+    }
+
+    fn make_new_event() -> NewEvent {
+        NewEvent {
+            start_time: "2026-03-09T08:00:00".to_string(),
+            app_bundle_id: "dev.chronos.test".to_string(),
+            app_name: "Code".to_string(),
+            window_title: Some("Chronos".to_string()),
+            browser_url: None,
+        }
+    }
+
+    #[test]
+    fn init_tables_adds_timesheet_columns_and_manual_entry_table() {
+        let db = make_test_db();
+        db.init_tables().expect("tables");
+
+        let conn = db.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare("PRAGMA table_info(events)")
+            .expect("table info");
+        let columns = stmt
+            .query_map([], |row| row.get::<_, String>(1))
+            .expect("column rows")
+            .collect::<Result<Vec<_>>>()
+            .expect("column names");
+
+        assert!(columns.contains(&"timesheet_status".to_string()));
+        assert!(columns.contains(&"approved_at".to_string()));
+
+        let table_exists: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'manual_time_entries'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("manual entry table");
+
+        assert_eq!(table_exists, 1);
+    }
+
+    #[test]
+    fn event_classification_assigns_default_timesheet_statuses_and_manual_approval_persists() {
+        let db = make_test_db();
+        db.init_tables().expect("tables");
+
+        let event_id = db.insert_event(&make_new_event()).expect("insert event");
+        db.close_event(event_id, "2026-03-09T09:00:00", 3600)
+            .expect("close event");
+
+        db.update_event_classification(
+            event_id,
+            &ClassificationResult {
+                project: Some("Chronos".to_string()),
+                category: "coding".to_string(),
+                task_description: Some("Core timesheet work".to_string()),
+                confidence: 0.92,
+                billable: false,
+            },
+            "rule",
+        )
+        .expect("classify event");
+
+        let event = db
+            .get_events_for_date("2026-03-09")
+            .expect("fetch events")
+            .into_iter()
+            .find(|item| item.id == event_id)
+            .expect("event row");
+        assert_eq!(event.timesheet_status.as_deref(), Some("suggested"));
+        assert_eq!(event.approved_at.as_deref(), None);
+
+        db.update_event_timesheet_status(event_id, "approved")
+            .expect("approve event");
+
+        let approved = db
+            .get_events_for_date("2026-03-09")
+            .expect("fetch approved event")
+            .into_iter()
+            .find(|item| item.id == event_id)
+            .expect("approved row");
+        assert_eq!(approved.timesheet_status.as_deref(), Some("approved"));
+        assert!(approved.approved_at.is_some());
+    }
+
+    #[test]
+    fn manual_time_entries_are_stored_separately_and_default_to_needs_review() {
+        let db = make_test_db();
+        db.init_tables().expect("tables");
+
+        let entry_id = db
+            .insert_manual_time_entry(&NewManualTimeEntry {
+                entry_date: "2026-03-09".to_string(),
+                duration_seconds: 2700,
+                project: Some("Chronos".to_string()),
+                category: Some("documentation".to_string()),
+                task_description: Some("Write release notes".to_string()),
+                source: "manual_nlp".to_string(),
+            })
+            .expect("insert manual time entry");
+
+        let entries = db
+            .get_manual_time_entries_for_date_range("2026-03-09", "2026-03-09")
+            .expect("fetch manual entries");
+        let entry = entries
+            .into_iter()
+            .find(|item| item.id == entry_id)
+            .expect("manual entry");
+
+        assert_eq!(entry.timesheet_status, "needs_review");
+        assert_eq!(entry.approved_at, None);
+
+        let event_count: i64 = db
+            .conn
+            .lock()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM events", [], |row| row.get(0))
+            .expect("event count");
+        assert_eq!(event_count, 0);
     }
 }
